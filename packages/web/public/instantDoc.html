@@ -1,0 +1,88 @@
+        <!-- 서버 상세 — Blinded(instant) 페이지. PID: &b=server (별칭 "server")
+             열 때 intent.data.server 로 서버 id 전달 → 핸들러(app.js)가 차트 mount -->
+        <section id="server" data-static="">
+            <div class="container vfv_scroll" data-container-id="root" data-static="1" data-title="서버 상세">
+                <article class="fwvs" data-article-id="main" data-static="1" data-title="서버 상세">
+                    <div class="ltnc_detail_bar">
+                        <button class="back_navigation tp_tiled_btn" title="뒤로 가기" onclick="this.closest('article[data-article-id]')?.pageHandle?.getHost('component').close(); return false; "></button>
+                        <div class="ltnc_detail_title">
+                            <h1 id="serverDetailName">서버</h1>
+                            <span id="serverDetailHost" class="ltnc_detail_host"></span>
+                        </div>
+                        <nav class="ltnc_range_set" aria-label="조회 범위">
+                            <button type="button" data-range="3600" data-active="1">1시간</button>
+                            <button type="button" data-range="21600">6시간</button>
+                            <button type="button" data-range="86400">24시간</button>
+                        </nav>
+                    </div>
+                    <div id="serverCharts" class="ltnc_chart_grid">
+                        <!-- LTNCCharts.create() 가 채움 (메트릭별 1 칸) -->
+                    </div>
+                </article>
+            </div>
+        </section>
+        <!-- M2: 알림센터 — Blinded(instant) 페이지. PID: &b=alerts (별칭 "alerts")
+             목록 렌더/푸시 토글 = app.js 의 LTNCAlertsPage + 알림 스토어 -->
+        <section id="alerts" data-static="">
+            <div class="container vfv_scroll" data-container-id="root" data-static="1" data-title="알림센터">
+                <article class="fwvs" data-article-id="main" data-static="1" data-title="알림센터">
+                    <div class="ltnc_detail_bar">
+                        <button class="back_navigation tp_tiled_btn" title="뒤로 가기" onclick="this.closest('article[data-article-id]')?.pageHandle?.getHost('component').close(); return false; "></button>
+                        <div class="ltnc_detail_title">
+                            <h1>알림센터</h1>
+                            <span class="ltnc_detail_host">서버 이상 징후 알림 — 실시간 수신</span>
+                        </div>
+                    </div>
+                    <!-- 푸시 구독 토글 (권한 요청은 버튼 클릭 핸들러 안에서만 — app.js) -->
+                    <div class="ltnc_push_panel">
+                        <div class="ltnc_push_info">
+                            <strong>푸시 알림</strong>
+                            <span id="alertsPushState">상태 확인 중…</span>
+                        </div>
+                        <button id="alertsPushToggle" type="button" disabled>푸시 켜기</button>
+                    </div>
+                    <p id="alertsPushIosNote" class="ltnc_push_ios_note" hidden>
+                        iOS(사파리)에서는 공유 버튼 → '홈 화면에 추가'로 설치한 뒤에 푸시 알림을 사용할 수 있어요.
+                    </p>
+                    <ul id="alertsList" class="ltnc_alerts_list">
+                        <!-- app.js 의 ltncRenderAlerts() 가 채움 -->
+                    </ul>
+                </article>
+            </div>
+        </section>
+        <!-- M2: 컷오버 워룸 — Blinded(instant) 페이지. PID: &b=warroom (별칭 "warroom")
+             서버 이전(컷오버) 당일: 복제 지연 + 양측 응답시간 + 상태 스트립 한 화면 -->
+        <section id="warroom" data-static="">
+            <div class="container vfv_scroll" data-container-id="root" data-static="1" data-title="컷오버 워룸">
+                <article class="fwvs ltnc_warroom_dialog sv_scroll" data-article-id="main" data-static="1" data-title="컷오버 워룸">
+                    <div class="ltnc_detail_bar">
+                        <button class="back_navigation tp_tiled_btn" title="뒤로 가기" onclick="this.closest('article[data-article-id]')?.pageHandle?.getHost('component').close(); return false; "></button>
+                        <div class="ltnc_detail_title">
+                            <h1>컷오버 워룸</h1>
+                            <span class="ltnc_detail_host">컷오버 후 운영 모니터링 — 응답시간·서버 상태</span>
+                        </div>
+                        <nav id="warroomRangeSet" class="ltnc_range_set" aria-label="조회 범위">
+                            <button type="button" data-range="3600" data-active="1">1시간</button>
+                            <button type="button" data-range="10800">3시간</button>
+                            <button type="button" data-range="21600">6시간</button>
+                            <button type="button" data-range="43200">12시간</button>
+                            <button type="button" data-range="86400">24시간</button>
+                            <button type="button" data-range="172800">48시간</button>
+                        </nav>
+                        <button type="button" class="ltnc_warroom_close" title="닫기" aria-label="닫기" onclick="this.closest('article[data-article-id]')?.pageHandle?.getHost('component').close(); return false; ">✕</button>
+                    </div>
+                    <!-- ③ 4대 + @checks 상태 요약 스트립 -->
+                    <div id="warroomStrip" class="ltnc_warroom_strip"></div>
+                    <!-- ① 복제 지연 (복제본 자동 발견 · exec.mysql_replica_lag, window.LTNC_WARROOM 으로 override) -->
+                    <div class="ltnc_warroom_sec">
+                        <h2>복제 지연 (Replication lag)</h2>
+                        <div id="warroomReplica" class="ltnc_warroom_replica"></div>
+                    </div>
+                    <!-- ② 외부 체크 응답시간 (@checks 의 check.*.ms — /api/checks 동적 발견) -->
+                    <div class="ltnc_warroom_sec">
+                        <h2>외부 체크 응답시간 — HTTP 체크(@checks)</h2>
+                        <div id="warroomChecks" class="ltnc_chart_grid ltnc_warroom_checks"></div>
+                    </div>
+                </article>
+            </div>
+        </section>

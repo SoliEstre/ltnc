@@ -1,0 +1,173 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>LongTimeNoC (LTNC)</title>
+    <meta property="og:title" content="LongTimeNoC (LTNC)" />
+    <meta property="og:image" content="./vectors/app_icon.svg" />
+    <meta property="og:image:alt" content="LTNC 앱 로고" />
+    <meta property="og:description" content="자체 서버 모니터링 대시보드 — 운영 서버 실시간 관측" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LTNC" />
+    <meta name="description" content="자체 서버 모니터링 대시보드 — 운영 서버 실시간 관측" />
+    <meta name="theme-color" content="#101216">
+    <script src="./scripts/boot.js"></script>
+    <!-- Preload initializing stylesheets -->
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUiInitialize.css" />
+
+
+    <!-- Begin links -->
+    <link rel="apple-touch-startup-image" href="./vectors/app_icon.svg">
+    <link rel="apple-touch-icon" href="./vectors/app_icon.svg">
+    <link rel="icon" type="image/svg+xml" href="./vectors/app_icon.svg" />
+    <link rel="manifest" href="./webmanifest.json">
+
+    <link rel="stylesheet" type="text/css" href="./styles/estreUiInitialize.css" />
+    <meta link="lazy" rel="stylesheet" type="text/css" href="./styles/estreUiEmoji.css" />
+    <meta link="lazy" rel="stylesheet" type="text/css" href="./styles/estreUiRoot.css" />
+    <meta link="lazy" rel="stylesheet" type="text/css" href="./styles/estreUiCore.css" />
+    <meta link="lazy" rel="stylesheet" type="text/css" href="./styles/estreUiCore2.css" />
+    <meta link="lazy" rel="stylesheet" type="text/css" href="./styles/estreUiAliases.css" />
+    <meta link="lazy" rel="stylesheet" type="text/css" href="./styles/estreUi.css" />
+    <meta link="lazy" rel="stylesheet" type="text/css" href="./styles/estreUiHandles.css" />
+    <meta link="lazy" rel="stylesheet" type="text/css" href="./styles/estreUiHandleUnical.css" />
+
+    <link rel="stylesheet" type="text/css" href="./styles/main.css">
+
+    <style>
+        /* in html styles */
+    </style>
+
+    <!--
+        EstreUV 타일(Lane B) import map — tiles/IMPORTMAP.json 의 인라인 사본.
+        IMPORTMAP.json 변경 시 이 블록도 같이 갱신할 것. (import map 은 모든
+        모듈 스크립트보다 먼저 와야 함 — dotlottie/타일 모듈 이전 위치 고정)
+    -->
+    <!-- IMPORTMAP_INJECT -->
+    <script type="importmap">
+    {
+        "imports": {
+            "lit": "/vendor/lit/index.js",
+            "lit/": "/vendor/lit/",
+            "@lit/context": "/vendor/@lit/context/index.js",
+            "@lit/reactive-element": "/vendor/@lit/reactive-element/reactive-element.js",
+            "@lit/reactive-element/": "/vendor/@lit/reactive-element/",
+            "lit-element/lit-element.js": "/vendor/lit-element/lit-element.js",
+            "lit-html": "/vendor/lit-html/lit-html.js",
+            "lit-html/": "/vendor/lit-html/",
+            "estreuv": "/vendor/estreuv/index.js",
+            "estreuv/": "/vendor/estreuv/"
+        }
+    }
+    </script>
+
+    <script dafer src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
+    <script defer src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
+    <script defer type="text/javascript" src="./scripts/jcodd.js"></script>
+    <script defer type="text/javascript" src="./scripts/doctre.js"></script>
+    <script defer type="text/javascript" src="./scripts/modernism.js"></script>
+    <script defer type="text/javascript" src="./scripts/alienese.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreU0EEOZ.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-core.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-dialog.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-notation.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-notification.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-pageModel.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-pageManager.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-handles.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-interaction.js"></script>
+    <script defer type="text/javascript" src="./scripts/estreUi-main.js"></script>
+
+    <!-- LTNC 데이터 코어 + 차트 (classic, defer 순서 = estreui 스택 뒤) -->
+    <script defer type="text/javascript" src="./scripts/ltnc-client.js"></script>
+    <script defer type="text/javascript" src="./vendor/uplot/uPlot.iife.min.js"></script><!-- Lane C 차트의 window.uPlot 의존 -->
+    <script defer type="text/javascript" src="./scripts/ltnc-charts.js"></script>
+    <script defer type="text/javascript" src="./scripts/ltnc-chart-detail.js"></script><!-- 전체화면 단독 차트 뷰(드래그 팬·네비) -->
+
+    <!-- LTNC 앱 글루 + 진입점 -->
+    <script defer type="text/javascript" src="./scripts/app.js"></script>
+    <script defer type="text/javascript" src="./scripts/main.js"></script>
+
+    <!-- EstreUV 타일 등록 진입점 (Lane B, ES module) -->
+    <script type="module" src="./tiles/index.js"></script>
+
+    <script>
+        // in html scripts
+    </script>
+
+    <!-- Preload exported sections - If not use section exports, must be commented out -->
+    <link rel="preload" as="fetch" type="text/html" href="./fixedTop.html" crossOrigin="anonymous" />
+    <link rel="preload" as="fetch" type="text/html" href="./fixedBottom.html" crossOrigin="anonymous" />
+    <link rel="preload" as="fetch" type="text/html" href="./managedOverlay.html" crossOrigin="anonymous" />
+    <link rel="preload" as="fetch" type="text/html" href="./staticDoc.html" crossOrigin="anonymous" />
+    <link rel="preload" as="fetch" type="text/html" href="./instantDoc.html" crossOrigin="anonymous" />
+    <link rel="preload" as="fetch" type="text/html" href="./mainMenu.html" crossOrigin="anonymous" />
+    <link rel="preload" as="fetch" type="text/html" href="./overwatchPanel.html" crossOrigin="anonymous" />
+    <link rel="preload" as="fetch" type="text/html" href="./stockHandlePrototypes.html" crossOrigin="anonymous" />
+    <link rel="preload" as="fetch" type="text/html" href="./customHandlePrototypes.html" crossOrigin="anonymous" />
+
+
+    <!-- Preload stylesheet be loaded lazy -->
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUiEmoji.css" />
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUiRoot.css" />
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUiCore.css" />
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUiCore2.css" />
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUiAliases.css" />
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUi.css" />
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUiHandles.css" />
+    <link rel="preload" as="style" type="text/css" href="./styles/estreUiHandleUnical.css" />
+</head>
+
+<body class="vfv_scroll">
+    <!-- LTNC 는 다크 고정(dark-locked) — FOLM(라이트 모드 깜빡임) 방지 사전 페인트 스크립트 -->
+    <script>
+        (function () {
+            // 다크 모드 강제 잠금(사용자 설정 무시 — 모니터링 보드는 다크 전용)
+            localStorage.setItem("estreUi.darkMode", "1");
+            document.body.dataset.darkMode = "1";
+        })();
+    </script>
+    <main id="splashRoot" style="z-index: 500; ">
+        <section id="splash" data-on-top="0">
+            <div class="container" data-container-id="root">
+                <article class="constraint" data-article-id="main">
+                    <div class="float_center" style="--width: min(50vw, 240px); " ondblclick="location.href = './serviceLoader.html'; ">
+                        <img src="./vectors/app_icon.svg" style="width: var(--width); " />
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <header id="fixedTop" data-exported="1" data-hide="">
+    </header>
+    <nav id="mainMenu" class="right" data-exported="1" data-opened="">
+    </nav>
+    <nav id="overwatchPanel" data-exported="1" data-opened="">
+    </nav>
+    <section id="panelTrigger" data-static="1"></section>
+
+    <div id="ptr"><div>
+    </div></div>
+    <main id="staticDoc" data-exported="1">
+    </main>
+    <footer id="fixedBottom" data-exported="1">
+        <nav id="instantSections" description="Don't insert anything. has to be managed automatically.">
+        </nav>
+    </footer>
+
+    <main id="instantDoc" data-exported="1">
+    </main>
+
+    <nav id="managedOverlay" data-exported="1">
+    </nav>
+    <div id="topLayer" data-exported="1">
+    </div>
+    <section id="handlePrototypes" style="display: none; " data-exported="1">
+    </section>
+</body>
+<script>document.getElementById("splash").dataset.onTop = "1"; //trigger for fade in splash</script>
+
+</html>

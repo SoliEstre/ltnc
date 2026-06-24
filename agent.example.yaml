@@ -1,0 +1,15 @@
+# LTNC agent 설정 예시 — 복사해서 agent.yaml 로 (token 파일 권한 600)
+hub: ws://127.0.0.1:8420/agent     # hub 가 원격이면 wss://monitor.example.com/agent (reverse-proxy TLS)
+id: example-web                     # hub config 의 agents[].id 와 일치
+token: CHANGE_ME_random_32+
+intervalSec: 10
+mounts: ["/", "/logs"]             # 디스크 사용률 감시 마운트
+systemdUnits: ["tomcat", "httpd", "mysqld"]
+ports: [8080, 80, 443, 3306]
+execMetrics:                        # 임의 수치 명령 → exec.<name> 메트릭
+  # 복제지연(레플리카 DB): 전용 모니터링 계정 .mon.cnf(REPLICATION CLIENT). ⚠️ 함정 2종 — ① "...\G" 는 yaml 이스케이프 깨짐(BAD_DQ_ESCAPE)으로 agent crash → --vertical 사용 ② -N 은 필드라벨까지 지워 awk 실패 → 빼기. 따옴표는 블록스칼라(>-)로 회피.
+  - name: mysql_replica_lag
+    cmd: >-
+      mysql --defaults-extra-file=/opt/ltnc-agent/.mon.cnf --vertical -e "SHOW REPLICA STATUS" 2>/dev/null | awk '/Seconds_Behind_Source/{print $2}' | head -1
+  - name: cert_days_left
+    cmd: "echo $(( ($(date -d \"$(openssl x509 -enddate -noout -in /etc/pki/tls/certs/server.crt 2>/dev/null | cut -d= -f2)\" +%s 2>/dev/null || echo 0) - $(date +%s)) / 86400 ))"

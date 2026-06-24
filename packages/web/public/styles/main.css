@@ -1,0 +1,699 @@
+/* LTNC(LongTimeNoC) — 앱 커스텀 스타일 (다크 고정) */
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');
+
+
+/* ── LTNC 공통 스타일 토큰 (CONTRACT.md — 모든 lane 동일 변수) ── */
+:root {
+    --ltnc-bg: #101216;
+    --ltnc-card: #1a1d23;
+    --ltnc-text: #e8eaed;
+    --ltnc-dim: #9aa0a6;
+    --ltnc-accent: #ff9500;
+    --ltnc-ok: #34c759;
+    --ltnc-warn: #ffb020;
+    --ltnc-crit: #ff4d4f;
+}
+
+
+/* ── 베이스 (다크 고정 — 스플래시 포함 즉시 적용 리터럴) ── */
+body {
+    --common-bg-color: #101216;
+
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: var(--ltnc-bg);
+    color: var(--ltnc-text);
+}
+
+body[data-dark-mode="1"] {
+    --common-bg-color: #101216;
+}
+
+main { font-family: 'Noto Sans KR', sans-serif; }
+main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif; }
+
+
+/* ── 앱바 ── */
+.ltnc_app_title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--ltnc-text);
+}
+.ltnc_app_title .ltnc_accent { color: var(--ltnc-accent); }
+
+.ltnc_conn_badge {
+    align-self: center;
+    margin-right: 6px;
+}
+
+
+/* ── 대시보드 ── */
+.ltnc_dash_head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 18px 18px 4px;
+}
+.ltnc_dash_head h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ltnc-text);
+}
+.ltnc_dash_desc { font-size: 13px; color: var(--ltnc-dim); }
+
+/* 헤더 우측 토글 버튼들 (카드폭 · 보기모드) — 첫 버튼만 좌측 여백 auto → 둘이 한 덩어리로 우측에 붙음(gap 12px) */
+.ltnc_dash_head .ltnc_view_toggle:first-of-type { margin-left: auto; }
+.ltnc_view_toggle {
+    padding: 6px 14px;
+    border: 1px solid var(--ltnc-dim);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ltnc-text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.ltnc_view_toggle:hover { border-color: var(--ltnc-accent); color: var(--ltnc-accent); }
+.ltnc_view_toggle[data-active="1"] {
+    border-color: var(--ltnc-accent);
+    background: color-mix(in srgb, var(--ltnc-accent) 14%, transparent);
+    color: var(--ltnc-accent);
+}
+
+/* 차트 컨트롤 바 (구간/범위/높이) — 펼침 모드 전용 */
+.ltnc_dash_controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding: 8px 18px 0;
+}
+.ltnc_ctl_group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.ltnc_ctl_label {
+    font-size: 12px;
+    color: var(--ltnc-dim);
+    margin-right: 2px;
+}
+.ltnc_ctl_group button {
+    padding: 4px 10px;
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 45%, transparent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ltnc-text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.ltnc_ctl_group button:hover { border-color: var(--ltnc-accent); color: var(--ltnc-accent); }
+.ltnc_ctl_group button[data-active="1"] {
+    border-color: var(--ltnc-accent);
+    background: color-mix(in srgb, var(--ltnc-accent) 16%, transparent);
+    color: var(--ltnc-accent);
+    font-weight: 600;
+}
+
+.ltnc_server_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    padding: 14px 18px 28px;
+}
+/* cards 모드: 서버 섹션 래퍼를 그리드에 투명화 — 카드가 그리드 셀 그대로 */
+.ltnc_server_grid[data-view="cards"] .ltnc_server_section { display: contents; }
+.ltnc_server_grid[data-view="cards"] .ltnc_inline_charts { display: none; }
+
+/* 카드 폭 토글: fit(내용맞춤·wrap, 기본) ↔ full(전체폭·1열). data-width 로 제어 */
+.ltnc_server_grid[data-view="cards"][data-width="full"] { grid-template-columns: 1fr; }
+.ltnc_server_grid[data-view="expanded"][data-width="fit"] {   /* 펼침도 풀폭 세로나열 대신 wrap 그리드로 촘촘하게 */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    align-items: start;
+}
+
+/* expanded 모드: 서버별 섹션(카드 + 미니 차트 스트립) 세로 나열 */
+.ltnc_server_grid[data-view="expanded"] {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.ltnc_server_grid[data-view="expanded"] .ltnc_server_section {
+    background: color-mix(in srgb, var(--ltnc-card) 55%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 22%, transparent);
+    border-radius: 14px;
+    padding: 12px;
+}
+.ltnc_inline_charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+.ltnc_inline_cell {
+    background: var(--ltnc-card);
+    border-radius: 10px;
+    padding: 8px 10px 6px;
+    min-width: 0;             /* 그리드 셀 내 uPlot 축소 허용 */
+}
+.ltnc_inline_cell > h4 {
+    margin: 0 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ltnc-dim);
+    display: flex; align-items: center; gap: 6px;
+}
+/* 차트 제목 텍스트 — 늘어나서 우측 버튼들을 끝으로 밀어냄(모든 박스 버튼 우측 정렬) */
+.ltnc_chart_ttl {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 단위 토글(% ↔ MB/GB) — 메모리·디스크 차트 제목 우측 소형 알약 */
+.ltnc_unit_toggle {
+    padding: 1px 7px;
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 45%, transparent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ltnc-text);
+    font-size: 10px; line-height: 1.5;
+    cursor: pointer; flex: none;
+    font-variant-numeric: tabular-nums;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.ltnc_unit_toggle:hover {
+    border-color: var(--ltnc-accent);
+    color: var(--ltnc-accent);
+    background: color-mix(in srgb, var(--ltnc-accent) 14%, transparent);
+}
+/* 상세보기(전체화면) 버튼 — 차트 제목 우측 */
+.ltnc_expand_btn {
+    padding: 1px 6px;
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 40%, transparent);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ltnc-dim);
+    font-size: 12px; line-height: 1.4;
+    cursor: pointer; flex: none;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.ltnc_unit_toggle + .ltnc_expand_btn { margin-left: 0; }
+.ltnc_expand_btn:hover { border-color: var(--ltnc-accent); color: var(--ltnc-accent); background: color-mix(in srgb, var(--ltnc-accent) 12%, transparent); }
+
+/* ── 전체화면 단독 차트 뷰 ── */
+.ltnc_dv_overlay {
+    position: fixed; inset: 0; z-index: 9000;
+    background: color-mix(in srgb, var(--ltnc-bg, #101216) 88%, black);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: stretch; justify-content: center;
+    padding: 2.2vmin;
+}
+.ltnc_dv_panel {
+    flex: 1; max-width: 1600px;
+    background: var(--ltnc-bg, #101216);
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 24%, transparent);
+    border-radius: 14px;
+    display: flex; flex-direction: column;
+    box-shadow: 0 18px 60px rgba(0,0,0,.55);
+    overflow: hidden;
+}
+.ltnc_dv_head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 14px; flex-wrap: wrap;
+    border-bottom: 1px solid color-mix(in srgb, var(--ltnc-dim) 18%, transparent);
+}
+.ltnc_dv_title { font-size: 15px; font-weight: 700; color: var(--ltnc-text); }
+.ltnc_dv_ctrls { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; margin-left: auto; }
+.ltnc_dv_group { display: flex; align-items: center; gap: 4px; }
+.ltnc_dv_label { font-size: 11px; color: var(--ltnc-dim); margin-right: 2px; }
+.ltnc_dv_seg { display: flex; gap: 3px; }
+.ltnc_dv_btn {
+    padding: 4px 9px;
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 42%, transparent);
+    border-radius: 7px; background: transparent;
+    color: var(--ltnc-text); font-size: 12px; cursor: pointer;
+    transition: border-color .12s, color .12s, background .12s;
+}
+.ltnc_dv_btn:hover { border-color: var(--ltnc-accent); color: var(--ltnc-accent); }
+.ltnc_dv_btn[data-active="1"] {
+    border-color: var(--ltnc-accent);
+    background: color-mix(in srgb, var(--ltnc-accent) 16%, transparent);
+    color: var(--ltnc-accent); font-weight: 600;
+}
+.ltnc_dv_cal {
+    padding: 3px 6px; border-radius: 7px;
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 42%, transparent);
+    background: var(--ltnc-card); color: var(--ltnc-text);
+    font-size: 12px; color-scheme: dark;
+}
+.ltnc_dv_close { font-size: 15px; padding: 4px 10px; }
+.ltnc_dv_chart { flex: 1; min-height: 0; padding: 10px 14px; position: relative; cursor: grab; }
+body.ltnc_dv_grabbing, body.ltnc_dv_grabbing .ltnc_dv_chart { cursor: grabbing !important; user-select: none; }
+/* 단독뷰: 캔버스가 높이를 꽉 채워 uPlot 범례(호버 시 시간/값)가 흐름상 자리가 없으므로 차트 위 떠있는 박스로 표시.
+   (인라인 작은 차트는 기존대로 캔버스 아래 일반 흐름에 표시 — 이 규칙은 단독뷰에만 적용) */
+.ltnc_dv_chart .u-legend {
+    position: absolute; top: 12px; right: 16px; margin: 0;
+    background: color-mix(in srgb, var(--ltnc-bg, #101216) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 24%, transparent);
+    border-radius: 8px; padding: 5px 11px;
+    pointer-events: none; z-index: 5;
+    font-variant-numeric: tabular-nums; text-align: left; white-space: nowrap;
+}
+/* 값 칼럼을 우측 정렬 + 최소폭 → 시간(x값)·값의 오른쪽 끝이 박스 고정 우측 끝에 핀,
+   값 폭(자릿수) 변동에도 시간 표시가 흔들리지 않음(고정폭 시각 + tabular-nums 병행) */
+.ltnc_dv_chart .u-legend .u-value { text-align: right; min-width: 96px; }
+.ltnc_dv_foot {
+    padding: 7px 14px; font-size: 12px; color: var(--ltnc-dim);
+    border-top: 1px solid color-mix(in srgb, var(--ltnc-dim) 18%, transparent);
+    font-variant-numeric: tabular-nums;
+}
+@media (max-width: 700px) {
+    .ltnc_dv_ctrls { gap: 6px 10px; }
+    .ltnc_dv_label { display: none; }
+}
+@media (max-width: 560px) {
+    .ltnc_inline_charts { grid-template-columns: 1fr 1fr; }
+}
+.ltnc_grid_empty {
+    grid-column: 1 / -1;
+    padding: 48px 0;
+    text-align: center;
+    color: var(--ltnc-dim);
+    font-size: 14px;
+}
+
+
+/* ── 서버 상세 ── */
+.ltnc_detail_bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 14px 16px 6px;
+    border-bottom: 1px solid rgba(154, 160, 166, 0.15);
+}
+.ltnc_detail_title { display: flex; align-items: baseline; gap: 10px; flex: 1 1 auto; min-width: 0; }
+.ltnc_detail_title h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ltnc-accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ltnc_detail_host { font-size: 12px; color: var(--ltnc-dim); }
+
+.ltnc_range_set { display: flex; gap: 6px; }
+.ltnc_range_set button {
+    padding: 5px 12px;
+    border: 1px solid rgba(154, 160, 166, 0.35);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--ltnc-dim);
+    font-size: 12px;
+    cursor: pointer;
+}
+.ltnc_range_set button[data-active="1"] {
+    border-color: var(--ltnc-accent);
+    color: var(--ltnc-accent);
+    font-weight: 700;
+}
+
+/* ── 앱바·네비게이션 크롬 (다크 고정 — 아이콘 가시성·배치) ── */
+/* 백네비 아이콘: 프레임워크 기본이 검정(#222) SVG라 다크에서 안 보임 → 밝은 텍스트색으로.
+   body 정의가 :root(html)보다 버튼에 가까워(근접 우선) 전역 적용됨 — 앱바·상세바 백버튼 모두 밝아짐. */
+body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M23.7783 10.8076L25.1925 12.2218L16.0001 21.4142L14.5859 20L23.7783 10.8076Z' fill='%23e8eaed'/%3E%3Cpath d='M14.5859 20L16.0002 18.5858L25.1925 27.7782L23.7783 29.1924L14.5859 20Z' fill='%23e8eaed'/%3E%3C/svg%3E%0A"); }
+/* 햄버거(메뉴) 아이콘: 검정 lottie → 흰색 + 앱바 우측끝 배치(row-reverse 라 order:-1=우측) + 좌측 간격 */
+#fixedTop #mainMenuBtn dotlottie-player { filter: brightness(0) invert(1); }
+#fixedTop .appbarRight #mainMenuBtn { order: -1; margin-left: 10px; }
+/* 단독 상세 백네비: 프레임워크가 absolute(컨테이너 좌상단 부유 — "따로 노는" 원인)로 띄우는 걸 해제
+   → 상세바 flex 흐름에 자연 배치(타이틀 왼쪽). ID 선택자로 프레임워크 규칙보다 우선. */
+#instantDoc .ltnc_detail_bar .back_navigation {
+    position: relative; top: auto; left: auto; margin: 0;
+    height: 30px; width: 30px; min-width: 30px; aspect-ratio: 1;
+    flex: 0 0 auto; align-self: center;
+}
+
+.ltnc_chart_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+    padding: 14px 16px 28px;
+}
+.ltnc_chart_cell {
+    background: var(--ltnc-card);
+    border: 1px solid rgba(154, 160, 166, 0.12);
+    border-radius: 10px;
+    padding: 10px 12px 6px;
+    min-width: 0;
+}
+.ltnc_chart_cell > h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ltnc-dim);
+    display: flex; align-items: center; gap: 6px;
+}
+.ltnc_chart_mount { position: relative; width: 100%; }
+.ltnc_charts_unavailable {
+    grid-column: 1 / -1;
+    padding: 40px 0;
+    text-align: center;
+    color: var(--ltnc-warn);
+    font-size: 14px;
+}
+
+
+/* ── 메인 메뉴 ── */
+.ltnc_menu { padding: 18px 16px; }
+.ltnc_menu_brand { display: flex; align-items: center; gap: 12px; }
+.ltnc_menu_brand img { width: 48px; height: 48px; border-radius: 12px; }
+.ltnc_menu_brand strong { display: block; font-size: 17px; color: var(--ltnc-text); }
+.ltnc_menu_brand span { font-size: 12px; color: var(--ltnc-dim); }
+.ltnc_menu_note { margin-top: 16px; font-size: 13px; line-height: 1.55; color: var(--ltnc-text); }
+.ltnc_menu_note .dim { color: var(--ltnc-dim); }
+
+/* M2: 메뉴 항목 (알림센터 · 컷오버 워룸 · 로그아웃) */
+.ltnc_menu_nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 18px;
+}
+.ltnc_menu_item {
+    display: block;
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 28%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--ltnc-card) 70%, transparent);
+    color: var(--ltnc-text);
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.ltnc_menu_item:hover {
+    border-color: var(--ltnc-accent);
+    color: var(--ltnc-accent);
+}
+.ltnc_menu_logout { color: var(--ltnc-dim); }
+.ltnc_menu_logout:hover { border-color: var(--ltnc-crit); color: var(--ltnc-crit); }
+
+
+/* ════ M2: 신규 화면 스타일 ════ */
+
+/* ── 앱바 알림 벨 + 미확인 뱃지 ── */
+.ltnc_bell_btn { position: relative; align-self: center; }
+.ltnc_bell_icon { font-size: 18px; line-height: 1; }
+.ltnc_bell_badge {
+    position: absolute;
+    top: 2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--ltnc-crit);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    pointer-events: none;
+}
+
+/* ── 로그인 오버레이 (다크) ── */
+#ltncLoginOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 600;                 /* splashRoot(500) 위 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--ltnc-bg) 90%, transparent);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+#ltncLoginOverlay[hidden] { display: none; }
+.ltnc_login_card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(86vw, 340px);
+    padding: 28px 24px;
+    background: var(--ltnc-card);
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 25%, transparent);
+    border-radius: 16px;
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+}
+.ltnc_login_logo { width: 56px; height: 56px; border-radius: 14px; align-self: center; }
+.ltnc_login_card h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--ltnc-text);
+}
+.ltnc_login_desc {
+    margin: 0;
+    font-size: 12px;
+    text-align: center;
+    color: var(--ltnc-dim);
+}
+.ltnc_login_card input {
+    padding: 11px 12px;
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 35%, transparent);
+    border-radius: 10px;
+    background: var(--ltnc-bg);
+    color: var(--ltnc-text);
+    font-size: 14px;
+    outline: none;
+}
+.ltnc_login_card input:focus { border-color: var(--ltnc-accent); }
+.ltnc_login_card button[type="submit"] {
+    margin-top: 4px;
+    padding: 11px 12px;
+    border: none;
+    border-radius: 10px;
+    background: var(--ltnc-accent);
+    color: #1a1d23;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.ltnc_login_card button[type="submit"]:disabled { opacity: .55; cursor: progress; }
+.ltnc_login_error { font-size: 12px; color: var(--ltnc-crit); text-align: center; }
+
+/* ── 알림센터: 푸시 구독 패널 ── */
+.ltnc_push_panel {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 14px 16px 0;
+    padding: 12px 14px;
+    background: var(--ltnc-card);
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 20%, transparent);
+    border-radius: 12px;
+}
+.ltnc_push_info { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.ltnc_push_info strong { font-size: 14px; color: var(--ltnc-text); }
+.ltnc_push_info span { font-size: 12px; color: var(--ltnc-dim); }
+#alertsPushToggle {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    border: 1px solid var(--ltnc-accent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ltnc-accent);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, color .15s, opacity .15s;
+}
+#alertsPushToggle[data-subscribed="1"] {
+    background: var(--ltnc-accent);
+    color: #1a1d23;
+}
+#alertsPushToggle:disabled { opacity: .45; cursor: not-allowed; }
+.ltnc_push_ios_note {
+    margin: 8px 16px 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ltnc-warn);
+}
+
+/* ── 알림센터: 알림 목록 ── */
+.ltnc_alerts_list {
+    list-style: none;
+    margin: 0;
+    padding: 14px 16px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ltnc_alerts_empty {
+    padding: 42px 0;
+    text-align: center;
+    color: var(--ltnc-dim);
+    font-size: 14px;
+}
+.ltnc_alert_item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--ltnc-card);
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 16%, transparent);
+    border-radius: 12px;
+}
+/* 심각도 색 칩: warn=#ffb020 / crit=#ff4d4f (계약 색상) · resolved=회색 */
+.ltnc_alert_chip {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--ltnc-dim);
+    color: #1a1d23;
+}
+.ltnc_alert_item[data-severity="warn"] .ltnc_alert_chip { background: var(--ltnc-warn); color: #1a1d23; }
+.ltnc_alert_item[data-severity="crit"] .ltnc_alert_chip { background: var(--ltnc-crit); color: #fff; }
+.ltnc_alert_item[data-state="resolved"] { opacity: .55; }
+.ltnc_alert_item[data-state="resolved"] .ltnc_alert_chip { background: var(--ltnc-dim); color: #1a1d23; }
+.ltnc_alert_body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ltnc_alert_head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ltnc_alert_head strong { font-size: 13px; color: var(--ltnc-accent); }
+.ltnc_alert_head span { font-size: 13px; color: var(--ltnc-text); }
+.ltnc_alert_detail { font-size: 12px; color: var(--ltnc-dim); word-break: break-all; }
+.ltnc_alert_time { font-size: 11px; color: var(--ltnc-dim); }
+.ltnc_alert_ack {
+    flex: 0 0 auto;
+    align-self: center;
+    padding: 6px 13px;
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 45%, transparent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ltnc-text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+}
+.ltnc_alert_ack:hover { border-color: var(--ltnc-ok); color: var(--ltnc-ok); }
+.ltnc_alert_ack:disabled { opacity: .45; cursor: progress; }
+
+/* ── 컷오버 워룸 ── */
+.ltnc_warroom_strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 16px 0;
+}
+.ltnc_strip_item, .ltnc_strip_check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--ltnc-card);
+    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 22%, transparent);
+    font-size: 12px;
+    color: var(--ltnc-text);
+}
+.ltnc_strip_dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ltnc-crit);
+}
+.ltnc_strip_item[data-online="1"] .ltnc_strip_dot { background: var(--ltnc-ok); }
+.ltnc_strip_item:not([data-online="1"]) { color: var(--ltnc-dim); }
+.ltnc_strip_check[data-up="1"] { border-color: color-mix(in srgb, var(--ltnc-ok) 55%, transparent); }
+.ltnc_strip_check[data-up="0"] {
+    border-color: var(--ltnc-crit);
+    color: var(--ltnc-crit);
+}
+.ltnc_warroom_sec { padding: 16px 16px 0; }
+.ltnc_warroom_sec:last-child { padding-bottom: 28px; }
+.ltnc_warroom_sec > h2 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ltnc-dim);
+}
+.ltnc_warroom_replica {
+    background: var(--ltnc-card);
+    border: 1px solid rgba(154, 160, 166, 0.12);
+    border-radius: 10px;
+    padding: 10px 12px 6px;
+    min-width: 0;
+}
+.ltnc_warroom_checks { padding: 0; }
+.ltnc_warroom_wait, .ltnc_warroom_note {
+    grid-column: 1 / -1;
+    padding: 34px 12px;
+    text-align: center;
+    color: var(--ltnc-dim);
+    font-size: 13px;
+}
+.ltnc_warroom_wait { color: var(--ltnc-warn); }
+.ltnc_warroom_close {
+    flex: 0 0 auto;
+    width: 30px; height: 30px;
+    padding: 0; margin-left: 4px;
+    border: none; border-radius: 8px;
+    background: transparent;
+    color: var(--ltnc-dim);
+    font-size: 15px; line-height: 1;
+    cursor: pointer;
+    transition: background-color .15s, color .15s;
+}
+.ltnc_warroom_close:hover { background: color-mix(in srgb, var(--ltnc-dim) 18%, transparent); color: var(--ltnc-text); }
+
+/* 워룸 floating dialog (와이드 ≥740px): 투명 백드롭 + 클릭 통과(뒤 대시보드 조작 가능 & 백드롭 클릭 비-닫힘)
+   + 드래그 이동(JS) + 리사이즈(네이티브 resize). 좁은 화면(<740px)은 현행 풀스크린 그대로 —
+   EstreUI 정본 브레이크포인트(innerWidth>=740 / @media min-width:740px) 일치. */
+@media (min-width: 740px) {
+    /* 백드롭 = 투명 + 포인터 통과: 클릭이 백드롭에 닿지 않아 닫힘 트리거도 없고 뒤 UI 로 그대로 전달 */
+    #instantDoc > section#warroom,
+    #warroom > .container { background: transparent !important; pointer-events: none; }
+    /* 다이얼로그 박스 = floating. 콘텐츠 영역만 포인터를 받음 */
+    #warroom .ltnc_warroom_dialog {
+        pointer-events: auto;
+        position: fixed;
+        top: 76px;
+        left: max(8px, calc(50% - min(390px, 46vw)));   /* 중심정렬을 translateX 없이 — 폭이 커져도 좌측이 안 밀려 리사이즈 튐 방지 */
+        width: min(780px, 92vw);
+        height: min(78vh, 700px);
+        max-width: 96vw; max-height: 92vh;
+        min-width: 360px; min-height: 220px;
+        margin: 0;
+        background: var(--ltnc-bg);
+        border: 1px solid color-mix(in srgb, var(--ltnc-dim) 28%, transparent);
+        border-radius: 14px;
+        box-shadow: 0 18px 60px rgb(0 0 0 / 58%);
+        overflow: auto;
+        resize: both;                 /* 우하단 네이티브 리사이즈 그래버 */
+        will-change: transform;       /* 자기 GPU 레이어로 승격 → 이동 시 repaint 0(합성만). 투명 백드롭 뒤 라이브 대시보드 재그리기 회피 */
+        transition: none;             /* EstreUI 기본(article transition-duration:0.5s, property=all)이 드래그 transform 을 0.5s 애니메이션화 → 커서보다 늦게 따라오는 lag 제거 */
+    }
+    /* 드래그 핸들 = 상세바(스크롤해도 상단 고정). 버튼/범위 클릭 제외는 JS 가 처리 */
+    #warroom .ltnc_warroom_dialog .ltnc_detail_bar {
+        cursor: move;
+        user-select: none;
+        touch-action: none;        /* 터치 드래그가 페이지 스크롤로 안 새게 */
+        position: sticky; top: 0; z-index: 2;
+        background: var(--ltnc-bg);
+    }
+    #warroom .ltnc_warroom_dialog.ltnc_dragging { user-select: none; cursor: grabbing; }
+}

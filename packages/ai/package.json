@@ -1,0 +1,15 @@
+{
+  "name": "@ltnc/ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LTNC AI 상황 다이제스트 — 이상 선별(plain code) + LLM 요약 (Anthropic Messages API 직접 fetch, 의존성 0)",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

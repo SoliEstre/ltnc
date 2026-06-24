@@ -1,0 +1,13 @@
+{
+  "name": "@ltnc/agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LTNC agent — per-server collector (MVP Node, v1.0 Go rewrite planned)",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.mjs",
+  "dependencies": {
+    "ws": "^8.18.0",
+    "yaml": "^2.6.0"
+  }
+}

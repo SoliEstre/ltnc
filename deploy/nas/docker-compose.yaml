@@ -1,0 +1,28 @@
+# LTNC — LongTimeNoC 모니터링 허브 (NAS Container Manager 프로젝트)
+# 도메인: ltnc.example.com (Nginx Proxy Manager → 이 호스트 ${LTNC_PORT})
+# ⚠ NPM 프록시 호스트 설정에서 "Websockets Support" 반드시 ON (/agent·/live 가 WS)
+services:
+  ltnc-hub:
+    image: node:24-alpine
+    container_name: ltnc-hub
+    restart: unless-stopped
+    working_dir: /app
+    command: node packages/hub/src/index.mjs /config/config.yaml
+    environment:
+      - TZ=${TZ:-Asia/Seoul}
+      - NODE_ENV=production
+    ports:
+      - "${LTNC_PORT:-8420}:8420"
+    volumes:
+      - ./app:/app:ro          # LTNC 소스 (읽기전용 — 업데이트 = app/ 교체 후 컨테이너 재시작)
+      - ./config:/config:ro    # config.yaml (agent 토큰 포함 — 권한 주의)
+      - ./data:/data           # SQLite DB·아카이브 (백업 대상)
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8420/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

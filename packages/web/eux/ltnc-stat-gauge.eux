@@ -1,0 +1,25 @@
+@component ltnc-stat-gauge
+@profile ui-component
+@intent 메트릭 1개의 현재 값을 보여주는 소형 SVG 링 게이지 — 카드 내부 부품이 기본 용도지만, server attribute 를 주면 단독으로도 LTNC 실시간 구독해 동작한다
+@expansion temperature=0.0 model=claude-fable-5[1m] template=agent/claude-code@ltnc-m1
+@targets estreuv
+
+@state
+  metric: string = '' # 메트릭 이름 (예: cpu.pct) — LTNC.label 로 한글 라벨/단위 해석
+  value: number = NaN # 표시 값. 부모(서버 카드)가 property 로 내려주는 게 기본 경로
+  server: string = '' # (선택) 지정 시 단독 모드 — LTNC 에서 직접 최신값 구독
+  label: string = '' # (선택) 라벨 덮어쓰기 (예: 디스크 mount 표기)
+  max: number = 100 # 링 만충 기준 (% 메트릭은 100 그대로)
+  warn: number = 70 # 경고 임계 (이상이면 --ltnc-warn 색)
+  crit: number = 90 # 위험 임계 (이상이면 --ltnc-crit 색)
+
+@behavior
+  connectedCallback : server 가 지정된 단독 모드면 LTNC.server(server).latest[metric] 로 초기값 + LTNC.on('metrics') 구독(내 server·metric 만 골라 value 갱신). 해제 함수 보관
+  disconnectedCallback : 구독 해제
+  _color() : value < warn → --ltnc-ok · warn ≤ value < crit → --ltnc-warn · crit ≤ value → --ltnc-crit
+  _ratio() : clamp(value / max, 0, 1) — NaN 이면 0 (링 비움)
+
+@render
+  56px SVG 링(가벼움 우선 — 외부 차트 라이브러리 없음): 바탕 트랙 원 + 진행 호(stroke-dasharray = ratio, _color 색, 둥근 끝, 270° 스윕·바닥 갭). 중앙에 값 텍스트(% 는 정수, 그 외 소수1) + 단위(작게 흐리게).
+  링 아래 한 줄 라벨: label 덮어쓰기 > LTNC.label(metric).name. 색 --ltnc-dim.
+  value 가 NaN(아직 미수신)이면 중앙 "–" 흐리게.

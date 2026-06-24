@@ -1,0 +1,26 @@
+        <section id="menuArea" class="vfv_scroll" data-static="1">
+            <div class="container" data-container-id="root" data-static="1">
+                <article class="rootMenu" data-article-id="main" data-static="1">
+                    <div class="ltnc_menu">
+                        <div class="ltnc_menu_brand">
+                            <img src="./vectors/app_icon.svg" alt="LTNC" />
+                            <div>
+                                <strong>LongTimeNoC</strong>
+                                <span>자체 서버 모니터링 (M2)</span>
+                            </div>
+                        </div>
+                        <!-- M2: 메뉴 항목 — 인라인 onclick→window.ltncMenuAction(app.js). EstreUI 가 섹션 클릭 전파를 막아 document 위임이 안 먹혀 인라인으로 처리. -->
+                        <nav class="ltnc_menu_nav">
+                            <button type="button" class="ltnc_menu_item" data-menu-action="alerts" onclick="ltncMenuAction('alerts'); return false;">🔔 알림센터</button>
+                            <button type="button" class="ltnc_menu_item" data-menu-action="warroom" onclick="ltncMenuAction('warroom'); return false;">🛰️ 컷오버 워룸</button>
+                            <button type="button" class="ltnc_menu_item ltnc_menu_logout" data-menu-action="logout" onclick="ltncMenuAction('logout'); return false;">🚪 로그아웃</button>
+                        </nav>
+                        <div class="ltnc_menu_note">
+                            <p>운영 서버들의 CPU/메모리/디스크/네트워크/서비스 상태를 실시간 수집·표시해요.</p>
+                            <p class="dim">데이터는 LTNC 허브(WS /live)에서 실시간 수신하며, 연결 상태는 상단 뱃지로 확인할 수 있어요.</p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+        <section id="grabArea" data-static="1"><div class="pad"></div></section>
