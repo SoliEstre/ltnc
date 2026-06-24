@@ -1,0 +1,48 @@
+# LTNC hub 설정 예시 — 복사해서 config.yaml 로 (config.yaml 은 gitignore, chmod 600 권장)
+port: 8420
+bind: 127.0.0.1          # 외부 노출은 reverse-proxy(httpd/nginx) 뒤에서. 직접 노출 시 보안 주의
+dataDir: ./data          # SQLite·아카이브 위치
+agents:                  # 피감시 서버 등록 — token 은 충분히 긴 무작위값으로
+  - id: example-web
+    token: CHANGE_ME_random_32+
+    tags: web,prod
+retention:
+  rawDays: 14
+  agg5mDays: 90
+  agg1hDays: 1095
+
+# ── M2: 간단 인증 게이트 (미설정 시 보호 비활성 — 기존처럼 공개, 기동 로그에 경고만) ──
+# passHash 생성: node packages/hub/src/auth.mjs <비밀번호>
+#auth:
+#  user: admin
+#  passHash: scrypt$16384$8$1$<salt-hex>$<key-hex>
+#  sessionTtlSec: 86400          # 세션 유지 시간(초). 재기동 시엔 전원 재로그인
+
+# ── M2: 알림 룰 — 기본 룰 내장(디스크 85/93·CPU 90·메모리 92·서비스/포트 다운·인증서 14일·복제지연·체크실패·offline)
+# 동일 (server·metric·severity) 키는 덮어쓰기, 새 키는 추가. enabled: false 로 기본 룰 끄기.
+#rules:
+#  - { metric: 'disk.*.used_pct', op: '>=', threshold: 80, severity: warn }            # 기본 85 → 80 강화
+#  - { metric: 'exec.queue_depth', op: '>', threshold: 100, forSec: 60, severity: warn, server: example-web }
+#  - { metric: 'cpu.pct', severity: warn, enabled: false }                             # 기본 CPU warn 룰 비활성
+
+# ── M2: 알림 채널 ──
+#notify:
+#  cooldownSec: 300              # 동일 알림 채널 재통지 최소 간격(초)
+#  webhooks:
+#    - name: chat                # 카카오워크/슬랙 호환 — POST JSON {text}
+#      url: https://hooks.example.com/services/XXXX
+#      severities: [crit]        # 생략 시 warn+crit 모두
+#  push:
+#    enabled: true               # 웹푸시 — VAPID 키는 data/vapid.json 자동 생성
+#    subject: mailto:admin@example.com
+
+# ── M2: 외부 HTTP 업타임 체크 — 가상 서버 '@checks' 메트릭(check.<id>.up / check.<id>.ms)으로 저장 ──
+#checks:
+#  - { id: www, url: https://www.example.com/, keyword: 환영, intervalSec: 60, timeoutSec: 10 }
+#  - { id: api-health, url: https://api.example.com/health }
+
+# ── M2: AI 다이제스트 (packages/ai — apiKey 또는 env ANTHROPIC_API_KEY 없으면 자동 비활성) ──
+#ai:
+#  model: claude-haiku-4-5
+#  apiKey: ''
+#  intervalSec: 900

@@ -1,0 +1,62 @@
+        <!-- 메인 탭 콘텐츠 - fixedBottom 의 탭 버튼 id 와 일치해야 함 -->
+        <section id="home" class="root_tab_content" data-static="1" data-on-top="1">
+            <div class="container vfv_scroll" data-container-id="root" data-static="1" data-title="대시보드">
+                <article id="dashboard" class="fwvs" data-article-id="main" data-static="1" data-title="대시보드">
+                    <!-- 대시보드 — 서버 카드 그리드 (카드 = Lane B 의 <ltnc-server-card> 타일) -->
+                    <div class="ltnc_dash_head">
+                        <h1>서버 현황</h1>
+                        <span class="ltnc_dash_desc">카드를 누르면 서버 상세 차트로 이동해요</span>
+                        <button id="dashWidthToggle" class="ltnc_view_toggle" type="button" title="카드 폭: 내용맞춤(여러 장 배치) / 전체폭(1열) 전환">▦ 내용맞춤</button>
+                        <button id="dashViewToggle" class="ltnc_view_toggle" type="button" title="카드만 보기 / 차트 펼쳐 보기 전환">📊 차트 펼침</button>
+                    </div>
+                    <!-- 차트 컨트롤 바 (펼침 모드에서만 표시) — 구간/범위/높이, 선택은 localStorage 유지 -->
+                    <div id="dashControls" class="ltnc_dash_controls" hidden>
+                        <div class="ltnc_ctl_group">
+                            <span class="ltnc_ctl_label">구간</span>
+                            <button type="button" data-range-view="31536000">연</button>
+                            <button type="button" data-range-view="2592000">월</button>
+                            <button type="button" data-range-view="604800">주</button>
+                            <button type="button" data-range-view="86400">일</button>
+                            <button type="button" data-range-view="43200">12시간</button>
+                            <button type="button" data-range-view="10800">3시간</button>
+                            <button type="button" data-range-view="3600">1시간</button>
+                        </div>
+                        <div class="ltnc_ctl_group">
+                            <span class="ltnc_ctl_label">범위</span>
+                            <button type="button" data-scale="auto" title="데이터 구간에 맞춰 확대(미세 변동 관찰)">상대</button>
+                            <button type="button" data-scale="full" title="0~최대 고정(포화·이상 직관 파악)">전체</button>
+                        </div>
+                        <div class="ltnc_ctl_group">
+                            <span class="ltnc_ctl_label">높이</span>
+                            <button type="button" data-heightx="1">1x</button>
+                            <button type="button" data-heightx="1.5">1.5x</button>
+                            <button type="button" data-heightx="2">2x</button>
+                            <button type="button" data-heightx="2.5">2.5x</button>
+                            <button type="button" data-heightx="3">3x</button>
+                            <button type="button" data-heightx="3.5">3.5x</button>
+                            <button type="button" data-heightx="4">4x</button>
+                        </div>
+                    </div>
+                    <div id="serverGrid" class="ltnc_server_grid">
+                        <div class="ltnc_grid_empty">서버 목록을 불러오는 중…</div>
+                    </div>
+                </article>
+            </div>
+        </section>
+        <!-- 탭 밖 추가 루트 컴포넌트 접근용 (림 기본 구조 — 유지) -->
+        <section id="more" class="modal fit bottom right stickyRootbar" data-static="1">
+            <div class="container vfv_scroll" data-container-id="root" data-static="1">
+                <article class="session_manager session_group_holder" data-article-id="main" data-static="1" style="text-align: left; ">
+                    <div class="linear_block hide_block_when_empty_list sessions_holder fixed_pages">
+                        <label>고정 페이지</label>
+                        <div class="line_block on_empty">활동 없음</div>
+                        <ul class="session_list"></ul>
+                    </div>
+                    <div class="linear_block hide_block_when_empty_list sessions_holder opened_pages">
+                        <label>열린 페이지</label>
+                        <div class="line_block on_empty">활동 없음</div>
+                        <ul class="session_list" description="Don't insert anything. has to be managed automatically."></ul>
+                    </div>
+                </article>
+            </div>
+        </section>

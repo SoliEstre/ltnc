@@ -1,0 +1,13 @@
+{
+  "name": "@ltnc/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LTNC dashboard SPA+PWA (EstreUI.js + EstreUV.js, brewed from .eux)",
+  "license": "MIT",
+  "dependencies": {
+    "estreui": "^1.5.1",
+    "estreuv": "^1.0.0",
+    "lit": "^3.2.0",
+    "uplot": "^1.6.31"
+  }
+}

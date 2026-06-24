@@ -1,0 +1,15 @@
+{
+  "__comment": "Lane A 가 index.html <script type=importmap> 로 삽입할 import map. 전부 public/vendor/ 로컬 사본(CDN 불요) — estreuv standalone 패턴(index-standalone.html) 의 node_modules 경로를 /vendor/ 로 치환. 모듈 로드 순서: importmap → /tiles/index.js",
+  "imports": {
+    "lit": "/vendor/lit/index.js",
+    "lit/": "/vendor/lit/",
+    "@lit/context": "/vendor/@lit/context/index.js",
+    "@lit/reactive-element": "/vendor/@lit/reactive-element/reactive-element.js",
+    "@lit/reactive-element/": "/vendor/@lit/reactive-element/",
+    "lit-element/lit-element.js": "/vendor/lit-element/lit-element.js",
+    "lit-html": "/vendor/lit-html/lit-html.js",
+    "lit-html/": "/vendor/lit-html/",
+    "estreuv": "/vendor/estreuv/index.js",
+    "estreuv/": "/vendor/estreuv/"
+  }
+}

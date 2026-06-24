@@ -1,0 +1,31 @@
+@profile ui-component
+@targets estreuv
+@intent 외부 HTTP 체크(@checks 가상 서버) 전용 카드 — check.<id>.up/.ms 를 주소별 행(상태 점·id·응답시간 막대·ms)으로 보여주고, 행 클릭 시 그 체크의 응답시간 단독 그래프(LTNCChartDetail)를 연다. 일반 서버 카드(<ltnc-server-card>)와 표시 방식이 다르다(게이지 대신 체크 목록).
+
+@element ltnc-checks-card
+@props
+  server : String — 보통 '@checks'
+
+@state
+  _rows : [{id, up:bool, ms:number}] — info.latest 의 check.<id>.up/.ms 파생
+  _online : bool
+
+@behavior
+  _resync() : LTNC.server(server).latest 에서 check.<id>.up(→up) · check.<id>.ms(→ms) 를 id 별로 묶어 _rows. 실패(down) 먼저 → id 순 정렬.
+  connectedCallback : _resync + LTNC.on('init'/'metrics'(자기 server)/'presence'(자기 server)) 구독
+  disconnectedCallback : 구독 해제
+  row click : LTNCChartDetail.open({server, metric:'check.<id>.ms'}) (stopPropagation)
+
+@render
+  다크 카드. 헤더: 🌐 + '외부 체크' + 'up/total 정상' 알약(전부 정상=ok톤·일부 실패=crit톤).
+  본문: 주소별 행 — 상태 점(up=ok·down=crit) · id · 응답시간 고정-최대 게이지 · 등급 라벨 · ms 텍스트.
+    게이지: 고정 최대 CHECK_MS_MAX(2000ms) 기준 채움. 구간별 등급으로 채움·라벨·ms 색 구분.
+    등급(ms 상한): good ≤200(초록) · fine ≤500(연두) · bad ≤1000(노랑) · issue ≤2000(주황) · 초과 또는 down = failure(빨강).
+    트랙 배경에 구간(good/fine/bad/issue)을 옅게 깔아 위치 가늠. down 은 게이지 full 빨강 + ms='실패'.
+  하단 힌트: "응답시간 게이지: 고정 최대 2000ms · good ≤200 · …". 체크 없으면 '외부 체크 대기 중…'.
+
+@const
+  CHECK_MS_MAX = 2000 — 게이지 고정 최대(ms)
+  CHECK_GRADES = [good ≤200 #34c759, fine ≤500 #8fd14f, bad ≤1000 #ffd60a, issue ≤2000 #ff9f0a, failure 초과/down #ff4d4f]
+
+@style-tokens --ltnc-card --ltnc-text --ltnc-dim --ltnc-ok --ltnc-warn --ltnc-crit --ltnc-accent (등급 색은 CHECK_GRADES 고정 팔레트)

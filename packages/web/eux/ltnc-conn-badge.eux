@@ -1,0 +1,17 @@
+@component ltnc-conn-badge
+@profile ui-component
+@intent 대시보드 ↔ 허브 WebSocket(/live) 연결 상태를 작은 알약 뱃지로 상시 표시한다 (헤더 상단용)
+@expansion temperature=0.0 model=claude-fable-5[1m] template=agent/claude-code@ltnc-m1
+@targets estreuv
+
+@state
+  state: string = 'connecting' # 'connected' | 'disconnected' | 'connecting'(최초 1회, 아직 이벤트 못 받음)
+
+@behavior
+  connectedCallback : LTNC.connected 로 초기 상태 결정(이미 연결돼 있으면 connected) + LTNC.on('connection', {connected}) 구독 → state 갱신. 해제 함수 보관
+  disconnectedCallback : 구독 해제
+
+@render
+  알약 뱃지 1개(다크 배경, 1px 테두리): 상태 점 + 문구.
+  connected → 점 --ltnc-ok + "허브 연결됨" · disconnected → 점 --ltnc-crit + "허브 끊김 — 재접속 중" · connecting → 점 --ltnc-warn(깜빡임 애니메이션) + "허브 연결 중…".
+  disconnected/connecting 일 때 점에 pulse 애니메이션으로 시선 유도. 문구 색 --ltnc-text, 점 8px.

@@ -1,0 +1,75 @@
+        <section id="appbar" data-static="1" data-on-top="1">
+            <div class="container" data-container-id="home" data-static="1" data-on-top="1">
+                <article class="appbarLeft" data-article-id="left" data-static="1" data-on-top="1">
+                    <nav class="tool_set" data-on-bound="root">
+                    </nav>
+                </article>
+                <article class="appbarCenter" data-article-id="center" data-static="1">
+                    <button id="appTitleBtn" class="tp_tiled_btn" title="대시보드로 이동">
+                        <span class="ltnc_app_title"><span class="ltnc_accent">LTNC</span> LongTimeNoC</span>
+                    </button>
+                    <nav class="tool_set" data-on-bound="root">
+                    </nav>
+                </article>
+                <article class="appbarRight" data-article-id="right" data-static="1">
+                    <!-- M2: 알림센터 벨 (미확인 수 뱃지 — app.js 가 동기화) -->
+                    <button class="ltnc_bell_btn tp_tiled_btn" type="button" title="알림센터 열기">
+                        <span class="ltnc_bell_icon">🔔</span>
+                        <span class="ltnc_bell_badge" hidden>0</span>
+                    </button>
+                    <!-- 허브 연결 상태 뱃지 (Lane B 타일) -->
+                    <ltnc-conn-badge class="ltnc_conn_badge"></ltnc-conn-badge>
+                    <button id="mainMenuBtn" class="tp_tiled_btn closer" title="메뉴 열기/닫기">
+                        <dotlottie-player src="./lotties/menu_and_close_btn.json" background="transparent" speed="1" direction="1" mode="normal"></dotlottie-player>
+                    </button>
+                    <nav class="tool_set" data-on-bound="root">
+                    </nav>
+                </article>
+            </div>
+            <div class="container" data-container-id="root" data-static="1">
+                <article class="appbarLeft" data-article-id="left" data-static="1" data-on-top="1">
+                    <button class="back_navigation tp_tiled_btn" title="뒤로 가기" style="margin-left: 2px; "></button>
+                    <label class="page_title_holder" style="margin-left: 6px; "><span id="pageTitle">대시보드</span></label>
+                    <nav class="tool_set" data-on-bound="root">
+                    </nav>
+                </article>
+                <article class="appbarCenter" data-article-id="center" data-static="1">
+                    <nav class="tool_set" data-on-bound="!home">
+                    </nav>
+                    <nav class="tool_set" data-on-bound="root">
+                    </nav>
+                </article>
+                <article class="appbarRight" data-article-id="right" data-static="1">
+                    <!-- M2: 알림센터 벨 (미확인 수 뱃지 — app.js 가 동기화) -->
+                    <button class="ltnc_bell_btn tp_tiled_btn" type="button" title="알림센터 열기">
+                        <span class="ltnc_bell_icon">🔔</span>
+                        <span class="ltnc_bell_badge" hidden>0</span>
+                    </button>
+                    <ltnc-conn-badge class="ltnc_conn_badge"></ltnc-conn-badge>
+                    <button id="mainMenuBtn" class="tp_tiled_btn closer" title="메뉴 열기/닫기">
+                        <dotlottie-player src="./lotties/menu_and_close_btn.json" background="transparent" speed="1" direction="1" mode="normal"></dotlottie-player>
+                    </button>
+                    <nav class="tool_set" data-on-bound="root">
+                    </nav>
+                </article>
+            </div>
+            <div class="container" data-container-id="sub" data-static="1">
+                <article class="appbarLeft" data-article-id="left" data-static="1">
+                    <button class="back_navigation tp_tiled_btn" title="뒤로 가기" style="margin-left: 2px; "></button>
+                    <label class="page_title_holder" style="margin-left: 6px; "><span id="pageTitle">서버 상세</span></label>
+                    <nav class="tool_set" data-on-bound="sub">
+                    </nav>
+                </article>
+                <article class="appbarCenter" data-article-id="center" data-static="1">
+                    <nav class="tool_set" data-on-bound="sub">
+                    </nav>
+                </article>
+                <article class="appbarRight" data-article-id="right" data-static="1">
+                    <button id="mainMenuBtn" class="tp_tiled_btn closer" title="메뉴 열기/닫기">
+                        <dotlottie-player src="./lotties/menu_and_close_btn.json" background="transparent" speed="1" direction="1" mode="normal"></dotlottie-player>
+                    </button>
+                    <nav class="tool_set" data-on-bound="sub">
+                    </nav>
+                </article>
+            </div>
+        </section>

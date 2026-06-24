@@ -1,0 +1,14 @@
+{
+  "name": "@ltnc/hub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LTNC hub — single-process collector/storage/API/WS server",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.mjs",
+  "dependencies": {
+    "web-push": "^3.6.7",
+    "ws": "^8.18.0",
+    "yaml": "^2.6.0"
+  }
+}
