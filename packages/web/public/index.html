@@ -12,7 +12,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="LTNC" />
     <meta name="description" content="자체 서버 모니터링 대시보드 — 운영 서버 실시간 관측" />
-    <meta name="theme-color" content="#101216">
+    <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
     <script src="./scripts/boot.js"></script>
     <!-- Preload initializing stylesheets -->
     <link rel="preload" as="style" type="text/css" href="./styles/estreUiInitialize.css" />
@@ -121,12 +122,19 @@
 </head>
 
 <body class="vfv_scroll">
-    <!-- LTNC 는 다크 고정(dark-locked) — FOLM(라이트 모드 깜빡임) 방지 사전 페인트 스크립트 -->
+    <!-- EstreUI 다크모드 설정에 따름 — 저장된 사용자 설정 우선, 없으면 OS(prefers-color-scheme).
+         라이트/다크 깜빡임(FOUC) 방지 위해 사전 페인트에서 적용. localStorage 는 쓰지 않음(auto 상태 보존 →
+         오버워치 패널의 다크모드 토글 auto→light→dark 순환이 그대로 동작). estreUi-main.js applyDarkMode() 와 동일 로직. -->
     <script>
         (function () {
-            // 다크 모드 강제 잠금(사용자 설정 무시 — 모니터링 보드는 다크 전용)
-            localStorage.setItem("estreUi.darkMode", "1");
-            document.body.dataset.darkMode = "1";
+            try {
+                var pref = localStorage.getItem("estreUi.darkMode");   // "1"=다크 / "0"=라이트 / null=auto(OS)
+                var isDark = pref === "1" ? true
+                           : pref === "0" ? false
+                           : !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+                if (isDark) document.body.dataset.darkMode = "1";
+                else delete document.body.dataset.darkMode;
+            } catch (e) { /* localStorage 불가 환경: EstreUI 가 init 시 재적용 */ }
         })();
     </script>
     <main id="splashRoot" style="z-index: 500; ">

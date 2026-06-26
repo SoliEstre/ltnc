@@ -1,6 +1,6 @@
 @component ltnc-server-card
 @profile ui-component
-@intent 서버 1대의 현재 상태(온라인 점·CPU/메모리/디스크 미니 게이지·서비스/포트 뱃지·인증서 D-n)를 다크 카드로 보여주고, 클릭하면 상세 페이지 열기 이벤트(ltnc:open-server)를 올린다
+@intent 서버 1대의 현재 상태(온라인 점·CPU/메모리/디스크 미니 게이지·서비스/포트 뱃지·인증서 D-n)를 테마 카드(라이트/다크 — EstreUI 다크모드 설정 추종)로 보여주고, 클릭하면 상세 페이지 열기 이벤트(ltnc:open-server)를 올린다
 @expansion temperature=0.0 model=claude-fable-5[1m] template=agent/claude-code@ltnc-m1
 @targets estreuv
 
@@ -20,7 +20,7 @@
   _certDays() : info.latest 키 중 /cert/i 매칭(운영 규약: exec.cert_*_days = 만료까지 남은 일수)을 찾아 최솟값 반환. 없으면 null (D-n 줄 미표시)
 
 @render
-  다크 카드 1장(배경 --ltnc-card, 라운드 12px, hover 시 오렌지 --ltnc-accent 테두리 + 살짝 부상, cursor:pointer).
+  카드 1장(배경 --ltnc-card — 라이트/다크 테마 추종, 테두리는 --ltnc-border 톤(저투명), 라운드 12px, hover 시 오렌지 --ltnc-accent 테두리 + 살짝 부상, cursor:pointer).
   헤더 줄: 온라인 점(켜짐 --ltnc-ok·꺼짐 --ltnc-crit, 켜짐일 때 은은한 glow) + 서버 id(굵게) + host(흐리게 --ltnc-dim).
   게이지 줄(wrap 허용): <ltnc-stat-gauge> — loop.lag_ms 보유 서버(@hub 허브 자가감시)는 루프지연 평균·최대 게이지(max/warn/crit 지정); 그 외 서버는 cpu.pct·mem.used_pct(값 있을 때만)·디스크 마운트마다 1개(_disks, label=짧은 마운트명). 값 없는 게이지는 미표시(빈 '—' 제거).
   뱃지 줄: 서비스/포트 뱃지(_svcBadges) — up 이면 --ltnc-ok 톤, down 이면 --ltnc-crit 톤의 작은 알약 모양.

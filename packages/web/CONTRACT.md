@@ -1,6 +1,6 @@
 # LTNC web M1 — lane 간 통합 계약 (rim / tiles / charts)
 
-> 3개 병렬 lane 이 이 계약만 지키면 통합이 성립한다. 데이터 접근은 **전부 `window.LTNC`**(scripts/ltnc-client.js — 이미 구현됨) 경유. 빌드 스텝 없음(브라우저 직행). 다크 테마 기본. 언어 한국어.
+> 3개 병렬 lane 이 이 계약만 지키면 통합이 성립한다. 데이터 접근은 **전부 `window.LTNC`**(scripts/ltnc-client.js — 이미 구현됨) 경유. 빌드 스텝 없음(브라우저 직행). 테마 = 라이트 기본 + 다크 오버라이드(EstreUI 자체 다크모드 설정 연동, 아래 토큰 표). 언어 한국어.
 
 ## 공통: window.LTNC (구현 완료 — 수정 금지, 사용만)
 - `LTNC.on(ev, fn)` — `init({servers})` · `metrics({server,ts,metrics})` · `presence({server,online})` · `connection({connected})`
@@ -12,7 +12,7 @@
 - estreui npm 패키지(루트 node_modules/estreui)를 림 템플릿으로 커스텀해 `public/` 에 배치.
 - 페이지 2개: ① **대시보드**(서버 카드 그리드 — 컨테이너에 서버별 `<ltnc-server-card server="<id>">` 생성) ② **서버 상세**(서버 선택 시 — 차트 영역에 `LTNCCharts.create()` 호출, 아래 Lane C 시그니처).
 - `index.html` 로드 순서: estreui 스택 → `/scripts/ltnc-client.js` → `/scripts/ltnc-charts.js`(classic) → `<script type="module" src="/tiles/index.js">`(UV 타일 등록).
-- PWA: estreui 동봉 webmanifest/serviceWorker 를 LTNC 명의(이름 LongTimeNoC, 테마 다크)로 커스텀.
+- PWA: estreui 동봉 webmanifest/serviceWorker 를 LTNC 명의(이름 LongTimeNoC, 테마 라이트/다크 — OS 추종)로 커스텀.
 - 타일/차트 내부 구현에 의존 금지 — 태그명·시그니처만 사용.
 
 ## Lane B — EstreUV 타일 (소유: eux/ · public/tiles/ · public/vendor/lit·estreuv)
@@ -23,18 +23,36 @@
   - `<ltnc-conn-badge>` — 허브 연결 상태(`LTNC.on('connection')`).
 - `public/tiles/index.js` = 타일 전체 import 진입점.
 - lit/estreuv 로딩은 EstreUV 의 standalone 패턴(레포 `E:\WorkBase\EstreUV.js\packages\estreuv\index-standalone.html` 참조) 그대로 — 가능하면 `public/vendor/` 로컬 사본, 불가피하면 CDN import map(주석으로 사유 명기). import map 자체는 Lane A 의 index.html 에 들어가므로 **필요한 import map JSON 을 `public/tiles/IMPORTMAP.json` 으로 산출**(Lane A 가 삽입).
-- 다크 테마, 오렌지 포인트(#ff9500), 상태색 green/amber/red.
+- 라이트/다크 테마(공통 토큰 자동 추종), 오렌지 포인트(#ff9500), 상태색 green/amber/red.
 
 ## Lane C — 차트 (소유: public/scripts/ltnc-charts.js · public/vendor/uplot)
 - uPlot 을 `public/vendor/uplot/`(uPlot.iife.min.js + uPlot.min.css — 루트 node_modules/uplot/dist 에서 복사)로 vendoring.
 - 전역 `window.LTNCCharts` (classic script):
   - `LTNCCharts.create(el, {server, metric, rangeSec=3600, height=180})` → 핸들 `{destroy(), setRange(sec), el}`
-  - 동작: `LTNC.range()` 로 초기 로드(res auto — agg 면 avg 라인 + min/max 밴드), `LTNC.on('metrics')` 로 라이브 append(rangeSec 창 유지), 컨테이너 ResizeObserver 반응형, 다크 테마, 시간축 한국어 포맷.
+  - 동작: `LTNC.range()` 로 초기 로드(res auto — agg 면 avg 라인 + min/max 밴드), `LTNC.on('metrics')` 로 라이브 append(rangeSec 창 유지), 컨테이너 ResizeObserver 반응형, 라이트/다크 테마(토큰 추종·전환 재색칠), 시간축 한국어 포맷.
   - 라벨/단위 = `LTNC.label(metric)`.
 - 의존: uPlot 전역(window.uPlot) + LTNC 만.
 
-## 공통 스타일 토큰 (각 lane CSS 에서 동일 변수 사용)
-`--ltnc-bg:#101216  --ltnc-card:#1a1d23  --ltnc-text:#e8eaed  --ltnc-dim:#9aa0a6  --ltnc-accent:#ff9500  --ltnc-ok:#34c759  --ltnc-warn:#ffb020  --ltnc-crit:#ff4d4f`
+## 공통 스타일 토큰 (각 lane CSS 에서 동일 변수 사용) — 라이트 기본 + 다크 오버라이드
+EstreUI 자체 다크모드 설정(`body[data-dark-mode="1"]`)에 따라 전환된다. **라이트가 기본값(`:root`)**, 다크는 `body[data-dark-mode="1"]` 에서 재정의(EstreUI 코어 규약과 동일 구조). 캔버스 차트(Lane C)는 CSS 변수를 직접 못 쓰므로 `getComputedStyle` 로 라이브 조회 후 hex→rgba 변환해 사용하고, 다크모드 토글 시 재색칠한다(`ltnc-charts.js` `readThemeTokens`).
+
+| 토큰 | 라이트(기본 `:root`) | 다크(`body[data-dark-mode="1"]`) | 용도 |
+|---|---|---|---|
+| `--ltnc-bg` | `#f4f5f7` | `#101216` | 페이지 배경 |
+| `--ltnc-card` | `#ffffff` | `#1a1d23` | 카드/표면 |
+| `--ltnc-text` | `#1f2329` | `#e8eaed` | 본문 텍스트 |
+| `--ltnc-dim` | `#5f6368` | `#9aa0a6` | 흐린 텍스트/축 라벨 |
+| `--ltnc-accent` | `#a8500a` | `#ff9500` | 포인트(오렌지) |
+| `--ltnc-ok` | `#1a7d35` | `#34c759` | 정상(초록) |
+| `--ltnc-warn` | `#8a5d00` | `#ffb020` | 경고(노랑) |
+| `--ltnc-crit` | `#cc2a2d` | `#ff4d4f` | 위험(빨강) |
+| `--ltnc-border` | `#1f2329` | `#9aa0a6` | 보더(`color-mix N%, transparent` 로 소비) |
+| `--ltnc-scrim` | `rgba(15,18,22,.42)` | `color-mix(--ltnc-bg 88%, black)` | 모달 백드롭 |
+| `--ltnc-shadow` | `0 14px 40px rgba(15,18,22,.14)` | `0 18px 60px rgba(0,0,0,.55)` | 떠있는 표면 그림자 |
+| `--ltnc-on-status` | `#ffffff` | `#1a1d23` | 상태색(accent/warn/dim) 배경 위 텍스트 |
+| `--ltnc-scheme` | `light` | `dark` | 네이티브 폼/달력/스크롤바 `color-scheme` |
+
+> 라이트 상태색(accent/ok/warn/crit)은 흰 배경 위 텍스트가 WCAG AA(≥4.5:1)를 만족하도록 다크판보다 진하게 조정했다. `--ltnc-crit` 흰글씨 칩(벨 뱃지·crit 칩)은 두 모드 모두 `#fff` 유지(다크 기존 동작 보존). 무설정 기본 테마 = EstreUI auto(OS `prefers-color-scheme`) — index.html 사전 페인트 스크립트가 저장설정 우선·없으면 OS 추종(다크 강제 잠금 해제, 2026-06-26).
 
 ---
 

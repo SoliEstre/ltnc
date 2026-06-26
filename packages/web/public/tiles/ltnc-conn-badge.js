@@ -27,7 +27,7 @@ export class LtncConnBadge extends EstreUVElement {
             display: inline-flex; align-items: center; gap: 7px;
             padding: 5px 12px; border-radius: 999px;
             background: var(--ltnc-card, #1a1d23);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid color-mix(in srgb, var(--ltnc-border, #9aa0a6) 18%, transparent);
             color: var(--ltnc-text, #e8eaed);
             font-size: 0.76rem; line-height: 1;
             user-select: none;
