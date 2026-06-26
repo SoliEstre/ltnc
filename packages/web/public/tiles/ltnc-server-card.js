@@ -33,7 +33,7 @@ export class LtncServerCard extends EstreUVElement {
         .card {
             background: var(--ltnc-card, #1a1d23);
             color: var(--ltnc-text, #e8eaed);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: 1px solid color-mix(in srgb, var(--ltnc-border, #9aa0a6) 14%, transparent);
             border-radius: 12px;
             padding: 14px 16px;
             cursor: pointer;

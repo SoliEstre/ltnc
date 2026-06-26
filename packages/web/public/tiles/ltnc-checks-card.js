@@ -43,7 +43,7 @@ export class LtncChecksCard extends EstreUVElement {
         .card {
             background: var(--ltnc-card, #1a1d23);
             color: var(--ltnc-text, #e8eaed);
-            border: 1px solid rgba(255,255,255,0.06);
+            border: 1px solid color-mix(in srgb, var(--ltnc-border, #9aa0a6) 14%, transparent);
             border-radius: 12px;
             padding: 12px 14px;
         }
@@ -68,7 +68,7 @@ export class LtncChecksCard extends EstreUVElement {
             padding: 4px 6px; border-radius: 7px; cursor: pointer;
             transition: background 120ms ease;
         }
-        .row:hover { background: rgba(255,255,255,0.05); }
+        .row:hover { background: color-mix(in srgb, var(--ltnc-dim, #9aa0a6) 12%, transparent); }
         .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--ltnc-crit, #ff4d4f); }
         .dot.on { background: var(--ltnc-ok, #34c759); box-shadow: 0 0 5px var(--ltnc-ok, #34c759); }
         .id {

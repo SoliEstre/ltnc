@@ -9,7 +9,8 @@
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="LTNC" />
     <meta name="description" content="자체 서버 모니터링 대시보드 — 망고페이 운영 서버 실시간 관측" />
-	<meta name="theme-color" content="#101216">
+	<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+	<meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
     <script>
 // Environment constants
 let isStandalone = !!window.matchMedia("(display-mode: standalone)").matches;
@@ -201,13 +202,19 @@ if ("serviceWorker" in navigator) {
     100% { translate: 350% 0; }
 }
 
-body { margin: 0; background-color: #101216; }
+/* 라이트 기본 + 다크(OS prefers-color-scheme) — 이 로딩 화면은 JS 테마 시스템이 없어 media query 로 OS 추종 */
+:root { --sl-bg: #f4f5f7; --sl-text: #1f2329; --sl-accent: #a8500a; }
+@media (prefers-color-scheme: dark) {
+    :root { --sl-bg: #101216; --sl-text: #e8eaed; --sl-accent: #ff9500; }
+}
 
-#centerPlacer { position: fixed; display: flex; flex-flow: column nowrap; top: 0; bottom: 0; left: 0; right: 0; width: fit-content; height: fit-content; margin: auto; color: #e8eaed; font-size: 0.875rem; line-height: 1.2em; user-select: none; }
+body { margin: 0; background-color: var(--sl-bg); }
+
+#centerPlacer { position: fixed; display: flex; flex-flow: column nowrap; top: 0; bottom: 0; left: 0; right: 0; width: fit-content; height: fit-content; margin: auto; color: var(--sl-text); font-size: 0.875rem; line-height: 1.2em; user-select: none; }
 
 #loopbar { position: absolute; bottom: -24px; left: -120px; right: -120px; width: 240px; height: 4px; margin: auto; border-radius: 4px; overflow: hidden; }
-#loopbar::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(90deg, #101216 0%, transparent 20%, transparent 80%, #101216 100%); }
-#loopworm { position: absolute; top: 0; left: -80%; width: 80%; height: 100%; border-radius: 4px; background-color: #ff9500; animation: loopmove 1s linear infinite; will-change: transform; }
+#loopbar::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(90deg, var(--sl-bg) 0%, transparent 20%, transparent 80%, var(--sl-bg) 100%); }
+#loopworm { position: absolute; top: 0; left: -80%; width: 80%; height: 100%; border-radius: 4px; background-color: var(--sl-accent); animation: loopmove 1s linear infinite; will-change: transform; }
     </style>
 </head>
 <body>

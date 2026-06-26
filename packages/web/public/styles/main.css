@@ -1,11 +1,44 @@
-/* LTNC(LongTimeNoC) — 앱 커스텀 스타일 (다크 고정) */
+/* LTNC(LongTimeNoC) — 앱 커스텀 스타일
+   라이트 기본 + 다크 오버라이드 — EstreUI 자체 다크모드 설정(body[data-dark-mode="1"])을 따름.
+   토큰은 :root(라이트 기본값) → body[data-dark-mode="1"](다크 오버라이드) 순으로 정의하며,
+   다크 오버라이드가 body 하위 전체에서 :root 라이트값을 이긴다(EstreUI 코어 규약과 동일 구조). */
 
 /* fonts */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');
 
 
-/* ── LTNC 공통 스타일 토큰 (CONTRACT.md — 모든 lane 동일 변수) ── */
+/* ── LTNC 공통 스타일 토큰 (CONTRACT.md — 모든 lane 동일 변수) — 라이트 기본값 ── */
 :root {
+    --ltnc-bg: #f4f5f7;
+    --ltnc-card: #ffffff;
+    --ltnc-text: #1f2329;
+    --ltnc-dim: #5f6368;
+    --ltnc-accent: #a8500a;      /* 라이트 배경 위 텍스트 대비 위해 진한 주황(망고) — AA≈5:1 */
+    --ltnc-ok: #1a7d35;
+    --ltnc-warn: #8a5d00;
+    --ltnc-crit: #cc2a2d;
+    /* 파생 시맨틱 토큰(라이트) — 다크에서 body[data-dark-mode="1"] 가 재정의 */
+    --ltnc-border: #1f2329;            /* color-mix N% 로 소비 — 라이트는 짙은 보더 베이스 */
+    --ltnc-scrim: rgba(15,18,22,.42);  /* 모달 백드롭 — 라이트도 충분히 어둡게 */
+    --ltnc-shadow: 0 14px 40px rgba(15,18,22,.14);
+    --ltnc-on-status: #ffffff;         /* 상태색(accent/warn/dim) 배경 위 텍스트 — 라이트=흰색 */
+    --ltnc-scheme: light;              /* 네이티브 폼/달력/스크롤바 크롬 */
+}
+
+
+/* ── 베이스 (스플래시 포함 즉시 적용 — 라이트 기본) ── */
+body {
+    --common-bg-color: #f4f5f7;   /* EstreUI eager 스플래시 리터럴(라이트) */
+    color-scheme: light;
+
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: var(--ltnc-bg);
+    color: var(--ltnc-text);
+}
+
+/* ── 다크 오버라이드 (EstreUI 다크모드 — 기존 LTNC 다크 팔레트 그대로 보존) ── */
+body[data-dark-mode="1"] {
+    --common-bg-color: #101216;
     --ltnc-bg: #101216;
     --ltnc-card: #1a1d23;
     --ltnc-text: #e8eaed;
@@ -14,20 +47,12 @@
     --ltnc-ok: #34c759;
     --ltnc-warn: #ffb020;
     --ltnc-crit: #ff4d4f;
-}
-
-
-/* ── 베이스 (다크 고정 — 스플래시 포함 즉시 적용 리터럴) ── */
-body {
-    --common-bg-color: #101216;
-
-    font-family: 'Noto Sans KR', sans-serif;
-    background-color: var(--ltnc-bg);
-    color: var(--ltnc-text);
-}
-
-body[data-dark-mode="1"] {
-    --common-bg-color: #101216;
+    --ltnc-border: #9aa0a6;
+    --ltnc-scrim: color-mix(in srgb, var(--ltnc-bg) 88%, black);
+    --ltnc-shadow: 0 18px 60px rgba(0,0,0,.55);
+    --ltnc-on-status: #1a1d23;
+    --ltnc-scheme: dark;
+    color-scheme: dark;
 }
 
 main { font-family: 'Noto Sans KR', sans-serif; }
@@ -104,7 +129,7 @@ main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif
 }
 .ltnc_ctl_group button {
     padding: 4px 10px;
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 45%, transparent);
     border-radius: 8px;
     background: transparent;
     color: var(--ltnc-text);
@@ -146,7 +171,7 @@ main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif
 }
 .ltnc_server_grid[data-view="expanded"] .ltnc_server_section {
     background: color-mix(in srgb, var(--ltnc-card) 55%, transparent);
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 22%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 22%, transparent);
     border-radius: 14px;
     padding: 12px;
 }
@@ -180,7 +205,7 @@ main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif
 /* 단위 토글(% ↔ MB/GB) — 메모리·디스크 차트 제목 우측 소형 알약 */
 .ltnc_unit_toggle {
     padding: 1px 7px;
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 45%, transparent);
     border-radius: 999px;
     background: transparent;
     color: var(--ltnc-text);
@@ -197,7 +222,7 @@ main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif
 /* 상세보기(전체화면) 버튼 — 차트 제목 우측 */
 .ltnc_expand_btn {
     padding: 1px 6px;
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 40%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 40%, transparent);
     border-radius: 6px;
     background: transparent;
     color: var(--ltnc-dim);
@@ -211,24 +236,24 @@ main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif
 /* ── 전체화면 단독 차트 뷰 ── */
 .ltnc_dv_overlay {
     position: fixed; inset: 0; z-index: 9000;
-    background: color-mix(in srgb, var(--ltnc-bg, #101216) 88%, black);
+    background: var(--ltnc-scrim);
     backdrop-filter: blur(2px);
     display: flex; align-items: stretch; justify-content: center;
     padding: 2.2vmin;
 }
 .ltnc_dv_panel {
     flex: 1; max-width: 1600px;
-    background: var(--ltnc-bg, #101216);
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 24%, transparent);
+    background: var(--ltnc-card);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 24%, transparent);
     border-radius: 14px;
     display: flex; flex-direction: column;
-    box-shadow: 0 18px 60px rgba(0,0,0,.55);
+    box-shadow: var(--ltnc-shadow);
     overflow: hidden;
 }
 .ltnc_dv_head {
     display: flex; align-items: center; gap: 14px;
     padding: 12px 14px; flex-wrap: wrap;
-    border-bottom: 1px solid color-mix(in srgb, var(--ltnc-dim) 18%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--ltnc-border) 18%, transparent);
 }
 .ltnc_dv_title { font-size: 15px; font-weight: 700; color: var(--ltnc-text); }
 .ltnc_dv_ctrls { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; margin-left: auto; }
@@ -237,7 +262,7 @@ main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif
 .ltnc_dv_seg { display: flex; gap: 3px; }
 .ltnc_dv_btn {
     padding: 4px 9px;
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 42%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 42%, transparent);
     border-radius: 7px; background: transparent;
     color: var(--ltnc-text); font-size: 12px; cursor: pointer;
     transition: border-color .12s, color .12s, background .12s;
@@ -250,9 +275,9 @@ main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif
 }
 .ltnc_dv_cal {
     padding: 3px 6px; border-radius: 7px;
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 42%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 42%, transparent);
     background: var(--ltnc-card); color: var(--ltnc-text);
-    font-size: 12px; color-scheme: dark;
+    font-size: 12px; color-scheme: var(--ltnc-scheme);
 }
 .ltnc_dv_close { font-size: 15px; padding: 4px 10px; }
 .ltnc_dv_chart { flex: 1; min-height: 0; padding: 10px 14px; position: relative; cursor: grab; }
@@ -261,8 +286,8 @@ body.ltnc_dv_grabbing, body.ltnc_dv_grabbing .ltnc_dv_chart { cursor: grabbing !
    (인라인 작은 차트는 기존대로 캔버스 아래 일반 흐름에 표시 — 이 규칙은 단독뷰에만 적용) */
 .ltnc_dv_chart .u-legend {
     position: absolute; top: 12px; right: 16px; margin: 0;
-    background: color-mix(in srgb, var(--ltnc-bg, #101216) 82%, transparent);
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 24%, transparent);
+    background: color-mix(in srgb, var(--ltnc-card) 88%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 24%, transparent);
     border-radius: 8px; padding: 5px 11px;
     pointer-events: none; z-index: 5;
     font-variant-numeric: tabular-nums; text-align: left; white-space: nowrap;
@@ -272,7 +297,7 @@ body.ltnc_dv_grabbing, body.ltnc_dv_grabbing .ltnc_dv_chart { cursor: grabbing !
 .ltnc_dv_chart .u-legend .u-value { text-align: right; min-width: 96px; }
 .ltnc_dv_foot {
     padding: 7px 14px; font-size: 12px; color: var(--ltnc-dim);
-    border-top: 1px solid color-mix(in srgb, var(--ltnc-dim) 18%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--ltnc-border) 18%, transparent);
     font-variant-numeric: tabular-nums;
 }
 @media (max-width: 700px) {
@@ -298,7 +323,7 @@ body.ltnc_dv_grabbing, body.ltnc_dv_grabbing .ltnc_dv_chart { cursor: grabbing !
     gap: 10px;
     flex-wrap: wrap;
     padding: 14px 16px 6px;
-    border-bottom: 1px solid rgba(154, 160, 166, 0.15);
+    border-bottom: 1px solid color-mix(in srgb, var(--ltnc-border) 25%, transparent);
 }
 .ltnc_detail_title { display: flex; align-items: baseline; gap: 10px; flex: 1 1 auto; min-width: 0; }
 .ltnc_detail_title h1 {
@@ -315,7 +340,7 @@ body.ltnc_dv_grabbing, body.ltnc_dv_grabbing .ltnc_dv_chart { cursor: grabbing !
 .ltnc_range_set { display: flex; gap: 6px; }
 .ltnc_range_set button {
     padding: 5px 12px;
-    border: 1px solid rgba(154, 160, 166, 0.35);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 42%, transparent);
     border-radius: 14px;
     background: transparent;
     color: var(--ltnc-dim);
@@ -328,12 +353,15 @@ body.ltnc_dv_grabbing, body.ltnc_dv_grabbing .ltnc_dv_chart { cursor: grabbing !
     font-weight: 700;
 }
 
-/* ── 앱바·네비게이션 크롬 (다크 고정 — 아이콘 가시성·배치) ── */
-/* 백네비 아이콘: 프레임워크 기본이 검정(#222) SVG라 다크에서 안 보임 → 밝은 텍스트색으로.
-   body 정의가 :root(html)보다 버튼에 가까워(근접 우선) 전역 적용됨 — 앱바·상세바 백버튼 모두 밝아짐. */
-body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M23.7783 10.8076L25.1925 12.2218L16.0001 21.4142L14.5859 20L23.7783 10.8076Z' fill='%23e8eaed'/%3E%3Cpath d='M14.5859 20L16.0002 18.5858L25.1925 27.7782L23.7783 29.1924L14.5859 20Z' fill='%23e8eaed'/%3E%3C/svg%3E%0A"); }
-/* 햄버거(메뉴) 아이콘: 검정 lottie → 흰색 + 앱바 우측끝 배치(row-reverse 라 order:-1=우측) + 좌측 간격 */
-#fixedTop #mainMenuBtn dotlottie-player { filter: brightness(0) invert(1); }
+/* ── 앱바·네비게이션 크롬 (아이콘 가시성·배치 — 라이트/다크 이중 변형) ── */
+/* 백네비 아이콘: 프레임워크 기본이 검정(#222) SVG. 라이트모드는 짙은 글리프(#1f2329)로 기본,
+   다크모드는 body[data-dark-mode="1"] 에서 밝은 글리프(#e8eaed)로 교체(아래).
+   body 정의가 :root(html)보다 버튼에 가까워(근접 우선) 전역 적용됨 — 앱바·상세바 백버튼 모두 반영. */
+body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M23.7783 10.8076L25.1925 12.2218L16.0001 21.4142L14.5859 20L23.7783 10.8076Z' fill='%231f2329'/%3E%3Cpath d='M14.5859 20L16.0002 18.5858L25.1925 27.7782L23.7783 29.1924L14.5859 20Z' fill='%231f2329'/%3E%3C/svg%3E%0A"); }
+body[data-dark-mode="1"] { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M23.7783 10.8076L25.1925 12.2218L16.0001 21.4142L14.5859 20L23.7783 10.8076Z' fill='%23e8eaed'/%3E%3Cpath d='M14.5859 20L16.0002 18.5858L25.1925 27.7782L23.7783 29.1924L14.5859 20Z' fill='%23e8eaed'/%3E%3C/svg%3E%0A"); }
+/* 햄버거(메뉴) 아이콘: 검정 lottie. 라이트=검정 유지(brightness(0)), 다크=흰색(invert) + 앱바 우측끝 배치(row-reverse 라 order:-1=우측) */
+#fixedTop #mainMenuBtn dotlottie-player { filter: brightness(0); }
+body[data-dark-mode="1"] #fixedTop #mainMenuBtn dotlottie-player { filter: brightness(0) invert(1); }
 #fixedTop .appbarRight #mainMenuBtn { order: -1; margin-left: 10px; }
 /* 단독 상세 백네비: 프레임워크가 absolute(컨테이너 좌상단 부유 — "따로 노는" 원인)로 띄우는 걸 해제
    → 상세바 flex 흐름에 자연 배치(타이틀 왼쪽). ID 선택자로 프레임워크 규칙보다 우선. */
@@ -351,7 +379,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
 }
 .ltnc_chart_cell {
     background: var(--ltnc-card);
-    border: 1px solid rgba(154, 160, 166, 0.12);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 20%, transparent);
     border-radius: 10px;
     padding: 10px 12px 6px;
     min-width: 0;
@@ -393,7 +421,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     display: block;
     width: 100%;
     padding: 11px 14px;
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 28%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 28%, transparent);
     border-radius: 12px;
     background: color-mix(in srgb, var(--ltnc-card) 70%, transparent);
     color: var(--ltnc-text);
@@ -432,7 +460,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     pointer-events: none;
 }
 
-/* ── 로그인 오버레이 (다크) ── */
+/* ── 로그인 오버레이 (라이트/다크 토큰) ── */
 #ltncLoginOverlay {
     position: fixed;
     inset: 0;
@@ -440,7 +468,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in srgb, var(--ltnc-bg) 90%, transparent);
+    background: var(--ltnc-scrim);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
 }
@@ -452,9 +480,9 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     width: min(86vw, 340px);
     padding: 28px 24px;
     background: var(--ltnc-card);
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 25%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 25%, transparent);
     border-radius: 16px;
-    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--ltnc-shadow);
 }
 .ltnc_login_logo { width: 56px; height: 56px; border-radius: 14px; align-self: center; }
 .ltnc_login_card h2 {
@@ -472,7 +500,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
 }
 .ltnc_login_card input {
     padding: 11px 12px;
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 35%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 40%, transparent);
     border-radius: 10px;
     background: var(--ltnc-bg);
     color: var(--ltnc-text);
@@ -486,7 +514,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     border: none;
     border-radius: 10px;
     background: var(--ltnc-accent);
-    color: #1a1d23;
+    color: var(--ltnc-on-status);
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
@@ -502,7 +530,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     margin: 14px 16px 0;
     padding: 12px 14px;
     background: var(--ltnc-card);
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 20%, transparent);
     border-radius: 12px;
 }
 .ltnc_push_info { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
@@ -522,7 +550,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
 }
 #alertsPushToggle[data-subscribed="1"] {
     background: var(--ltnc-accent);
-    color: #1a1d23;
+    color: var(--ltnc-on-status);
 }
 #alertsPushToggle:disabled { opacity: .45; cursor: not-allowed; }
 .ltnc_push_ios_note {
@@ -553,7 +581,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     gap: 10px;
     padding: 12px 14px;
     background: var(--ltnc-card);
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 16%, transparent);
     border-radius: 12px;
 }
 /* 심각도 색 칩: warn=#ffb020 / crit=#ff4d4f (계약 색상) · resolved=회색 */
@@ -565,12 +593,12 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     font-size: 11px;
     font-weight: 700;
     background: var(--ltnc-dim);
-    color: #1a1d23;
+    color: var(--ltnc-on-status);
 }
-.ltnc_alert_item[data-severity="warn"] .ltnc_alert_chip { background: var(--ltnc-warn); color: #1a1d23; }
+.ltnc_alert_item[data-severity="warn"] .ltnc_alert_chip { background: var(--ltnc-warn); color: var(--ltnc-on-status); }
 .ltnc_alert_item[data-severity="crit"] .ltnc_alert_chip { background: var(--ltnc-crit); color: #fff; }
 .ltnc_alert_item[data-state="resolved"] { opacity: .55; }
-.ltnc_alert_item[data-state="resolved"] .ltnc_alert_chip { background: var(--ltnc-dim); color: #1a1d23; }
+.ltnc_alert_item[data-state="resolved"] .ltnc_alert_chip { background: var(--ltnc-dim); color: var(--ltnc-on-status); }
 .ltnc_alert_body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .ltnc_alert_head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .ltnc_alert_head strong { font-size: 13px; color: var(--ltnc-accent); }
@@ -581,7 +609,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     flex: 0 0 auto;
     align-self: center;
     padding: 6px 13px;
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 45%, transparent);
     border-radius: 999px;
     background: transparent;
     color: var(--ltnc-text);
@@ -606,7 +634,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
     padding: 5px 11px;
     border-radius: 999px;
     background: var(--ltnc-card);
-    border: 1px solid color-mix(in srgb, var(--ltnc-dim) 22%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 22%, transparent);
     font-size: 12px;
     color: var(--ltnc-text);
 }
@@ -618,7 +646,8 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
 }
 .ltnc_strip_item[data-online="1"] .ltnc_strip_dot { background: var(--ltnc-ok); }
 .ltnc_strip_item:not([data-online="1"]) { color: var(--ltnc-dim); }
-.ltnc_strip_check[data-up="1"] { border-color: color-mix(in srgb, var(--ltnc-ok) 55%, transparent); }
+/* UP = 기능 상태 지표(WCAG 1.4.11) — 라이트에서 옅은 초록 보더가 사라지지 않도록 solid 로(DOWN 의 solid crit 과 대칭) */
+.ltnc_strip_check[data-up="1"] { border-color: var(--ltnc-ok); }
 .ltnc_strip_check[data-up="0"] {
     border-color: var(--ltnc-crit);
     color: var(--ltnc-crit);
@@ -633,7 +662,7 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
 }
 .ltnc_warroom_replica {
     background: var(--ltnc-card);
-    border: 1px solid rgba(154, 160, 166, 0.12);
+    border: 1px solid color-mix(in srgb, var(--ltnc-border) 20%, transparent);
     border-radius: 10px;
     padding: 10px 12px 6px;
     min-width: 0;
@@ -679,9 +708,9 @@ body { --svg-back: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox
         min-width: 360px; min-height: 220px;
         margin: 0;
         background: var(--ltnc-bg);
-        border: 1px solid color-mix(in srgb, var(--ltnc-dim) 28%, transparent);
+        border: 1px solid color-mix(in srgb, var(--ltnc-border) 28%, transparent);
         border-radius: 14px;
-        box-shadow: 0 18px 60px rgb(0 0 0 / 58%);
+        box-shadow: var(--ltnc-shadow);
         overflow: auto;
         resize: both;                 /* 우하단 네이티브 리사이즈 그래버 */
         will-change: transform;       /* 자기 GPU 레이어로 승격 → 이동 시 repaint 0(합성만). 투명 백드롭 뒤 라이브 대시보드 재그리기 회피 */

@@ -46,7 +46,7 @@ export class LtncStatGauge extends EstreUVElement {
         }
         .ring { position: relative; width: 56px; height: 56px; }
         svg { display: block; transform: rotate(135deg); } /* 갭이 바닥에 오도록 회전 */
-        .track { stroke: rgba(255, 255, 255, 0.08); }
+        .track { stroke: color-mix(in srgb, var(--ltnc-dim, #9aa0a6) 26%, transparent); }
         .bar { transition: stroke-dasharray 300ms ease, stroke 300ms ease; }
         .center {
             position: absolute; inset: 0;

@@ -9,16 +9,50 @@
 (function () {
   'use strict';
 
-  // ── 다크 테마 토큰 (CONTRACT.md 공통 스타일 토큰과 동일 팔레트) ──
-  const C = {
-    text:  '#e8eaed',                    // --ltnc-text
-    dim:   '#9aa0a6',                    // --ltnc-dim   (축 라벨)
-    grid:  'rgba(154,160,166,0.14)',     // 그리드(dim 의 저투명)
-    tick:  'rgba(154,160,166,0.30)',
-    line:  '#ff9500',                    // --ltnc-accent (망고 오렌지)
-    band:  'rgba(255,149,0,0.16)',       // min/max 음영 밴드
-    edge:  'rgba(255,149,0,0.45)',       // min/max 경계선(흐리게)
-  };
+  // ── 테마 토큰 (CSS --ltnc-* 라이브 조회 — EstreUI 라이트/다크 설정 자동 추종) ──
+  // CONTRACT.md 공통 토큰과 동일 팔레트. 캔버스(uPlot)는 color-mix() 미지원 엔진 호환 위해
+  // 토큰 hex 를 rgba 로 변환해 쓰고, 레전드/빈안내(HTML)는 CSS var 로 직접 추종(ensureCss).
+  function _toRgb(c) {
+    c = String(c || '').trim();
+    var m = /^#([0-9a-f]{3})$/i.exec(c);
+    if (m) { var h = m[1]; return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)]; }
+    m = /^#([0-9a-f]{6})$/i.exec(c);
+    if (m) { var x = m[1]; return [parseInt(x.slice(0, 2), 16), parseInt(x.slice(2, 4), 16), parseInt(x.slice(4, 6), 16)]; }
+    m = /rgba?\(([^)]+)\)/i.exec(c);
+    if (m) { var p = m[1].split(',').map(function (s) { return parseFloat(s); }); return [p[0] || 0, p[1] || 0, p[2] || 0]; }
+    return null;
+  }
+  function _rgba(c, a) { var t = _toRgb(c); return t ? 'rgba(' + t[0] + ',' + t[1] + ',' + t[2] + ',' + a + ')' : c; }
+  function readThemeTokens() {
+    var cs = getComputedStyle(document.body);
+    var v = function (n, f) { var g = cs.getPropertyValue(n); return (g && g.trim()) || f; };
+    var dim = v('--ltnc-dim', '#9aa0a6');
+    var accent = v('--ltnc-accent', '#ff9500');
+    return {
+      text: v('--ltnc-text', '#e8eaed'),
+      dim:  dim,                      // 축 라벨
+      grid: _rgba(dim, 0.14),         // 그리드(dim 저투명)
+      tick: _rgba(dim, 0.30),
+      line: accent,                   // 시리즈 라인(망고 오렌지)
+      band: _rgba(accent, 0.16),      // min/max 음영 밴드
+      edge: _rgba(accent, 0.45),      // min/max 경계선(흐리게)
+    };
+  }
+  let C = readThemeTokens();
+
+  // ── 다크모드 전환(body[data-dark-mode] 토글/OS 변경) 시 캔버스 팔레트 라이브 재적용 ──
+  const _liveCharts = new Set();
+  function _onThemeChange() {
+    C = readThemeTokens();
+    _liveCharts.forEach(function (fn) { try { fn(); } catch (e) {} });
+  }
+  if (typeof MutationObserver !== 'undefined') {
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        if (muts[i].attributeName === 'data-dark-mode') { _onThemeChange(); break; }
+      }
+    }).observe(document.body, { attributes: true, attributeFilter: ['data-dark-mode'] });
+  }
 
   const CSS_HREF = '/vendor/uplot/uPlot.min.css';
   const AGG_REFRESH_MS = 60_000;         // agg 해상도 재조회 주기(60초)
@@ -31,14 +65,14 @@
     link.href = CSS_HREF;
     link.setAttribute('data-ltnc-uplot', '1');
     document.head.appendChild(link);
-    // 레전드 텍스트가 기본 검정이라 다크 배경에서 안 보임 → 1회성 오버라이드 스타일
+    // 레전드/빈안내 텍스트 색 = CSS 토큰 직접 참조 → 라이트/다크 자동 추종(재주입 불필요)
     const style = document.createElement('style');
     style.setAttribute('data-ltnc-uplot', '1');
     style.textContent =
-      '.u-legend { color: ' + C.dim + '; font-size: 11px; }' +
-      '.u-legend .u-value { color: ' + C.text + '; }' +
+      '.u-legend { color: var(--ltnc-dim, #9aa0a6); font-size: 11px; }' +
+      '.u-legend .u-value { color: var(--ltnc-text, #e8eaed); }' +
       '.ltnc-chart-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;' +
-      ' color:' + C.dim + '; font-size:13px; pointer-events:none; }';
+      ' color: var(--ltnc-dim, #9aa0a6); font-size:13px; pointer-events:none; }';
     document.head.appendChild(style);
   }
 
@@ -304,6 +338,10 @@
     });
     ro.observe(el);
 
+    // 다크모드 전환 시 이 차트의 캔버스 색을 현재 토큰으로 재구성(_onThemeChange 가 호출)
+    const applyTheme = () => { if (!destroyed && u) rebuild(mode === 'agg'); };
+    _liveCharts.add(applyTheme);
+
     // 최초 로드
     load().catch((e) => console.error('[LTNCCharts]', e));
 
@@ -367,6 +405,7 @@
         loadSeq++;             // 진행 중인 비동기 load 응답 무효화
         disarmLive();
         ro.disconnect();
+        _liveCharts.delete(applyTheme);
         if (u) { u.destroy(); u = null; }
         hideEmpty();
       },

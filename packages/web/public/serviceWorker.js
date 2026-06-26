@@ -1,5 +1,7 @@
-const INSTALLATION_VERSION_NAME = "ltnc-0.1.0-r20260622b";
+const INSTALLATION_VERSION_NAME = "ltnc-0.1.0-r20260626b";
 // ^^ LTNC PWA 릴리스 버전 — 앱 파일 변경 시 이 값을 올려서 캐시 갱신
+//    r20260626: 라이트모드 컬러셋(main.css·ltnc-charts.js) — 기존 PWA 캐시 무효화
+//    r20260626b: 타일 라이트모드(게이지 트랙·카드/뱃지 보더 흰색-알파→토큰)
 
 const INSTALLATION_FILE_LIST = [
     "./serviceWorker.js",
@@ -31,7 +33,7 @@ const INSTALLATION_FILE_LIST = [
 
 
 // Common files cache - Be changes some time but, well not changed very often
-const CACHE_NAME_COMMON_FILES = "ltnc-common-files-cache-v1-20260611";
+const CACHE_NAME_COMMON_FILES = "ltnc-common-files-cache-v1-20260626";
 
 const COMMON_FILES_TO_CACHE = [
     "./",

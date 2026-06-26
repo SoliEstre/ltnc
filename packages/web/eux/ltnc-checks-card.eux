@@ -17,7 +17,7 @@
   row click : LTNCChartDetail.open({server, metric:'check.<id>.ms'}) (stopPropagation)
 
 @render
-  다크 카드. 헤더: 🌐 + '외부 체크' + 'up/total 정상' 알약(전부 정상=ok톤·일부 실패=crit톤).
+  카드(배경 --ltnc-card, 테두리 --ltnc-border 톤 — 라이트/다크 테마 추종). 헤더: 🌐 + '외부 체크' + 'up/total 정상' 알약(전부 정상=ok톤·일부 실패=crit톤).
   본문: 주소별 행 — 상태 점(up=ok·down=crit) · id · 응답시간 고정-최대 게이지 · 등급 라벨 · ms 텍스트.
     게이지: 고정 최대 CHECK_MS_MAX(2000ms) 기준 채움. 구간별 등급으로 채움·라벨·ms 색 구분.
     등급(ms 상한): good ≤200(초록) · fine ≤500(연두) · bad ≤1000(노랑) · issue ≤2000(주황) · 초과 또는 down = failure(빨강).
