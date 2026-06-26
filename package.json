@@ -1,6 +1,6 @@
 {
   "name": "ltnc",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "LongTimeNoC (LTNC) — self-hosted server & service monitoring: web war-room dashboard, PWA push alerts, RBAC, AI situation digest. 오랫동안 콘솔 안 봐도 되는 자체 모니터링.",
   "license": "MIT",
