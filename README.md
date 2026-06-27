@@ -106,6 +106,20 @@ npm run agent
 
 A single‑container recipe (node:24‑alpine + a reverse proxy with **WebSocket support enabled**) lives in [`deploy/nas`](deploy/nas) — written for Synology Container Manager + Nginx Proxy Manager, but any Docker host works. **Host LTNC outside the fleet it watches** so it survives a full‑fleet outage.
 
+#### Windows agent (Server 2019+)
+
+The agent is cross‑platform Node. On Windows it collects CPU, memory, **disk capacity** (`fs.statfs` per drive), **network throughput** & **disk I/O** (PowerShell — `Get‑NetAdapter -Physical` for connected NICs only, no double‑count; `PhysicalDisk(_Total)` for I/O), plus TCP port probes. `systemdUnits` is ignored on Windows (use `ports[]` for service health); `execMetrics` use `bash` and are skipped unless a POSIX shell is present.
+
+- **Config** ([`agent.example.yaml`](agent.example.yaml) has a Windows block): `mounts: ['C:\', 'D:\']` → metric keys `disk.c.*` / `disk.d.*` (drive letter lowercased). Recommend `intervalSec: 30` (each sample cold‑spawns PowerShell ~2–3 s). Optional `psExe: powershell` (default — faster cold‑spawn than `pwsh` 7; set `pwsh` to force it). Node must be installed on the server; Windows PowerShell 5.1 is built‑in (pwsh 7 optional).
+- **Run as a service (recommended — [NSSM](https://nssm.cc))**:
+  ```
+  nssm install LTNCAgent "C:\Program Files\nodejs\node.exe" "C:\ltnc-agent\packages\agent\src\index.mjs" "C:\ltnc-agent\agent.yaml"
+  nssm set LTNCAgent AppStdout C:\ltnc-agent\agent.log
+  nssm set LTNCAgent AppExit Default Restart
+  nssm start LTNCAgent
+  ```
+- **Or a Scheduled Task** (no extra tooling): `schtasks /Create /TN LTNCAgent /TR "\"C:\Program Files\nodejs\node.exe\" \"C:\ltnc-agent\packages\agent\src\index.mjs\" \"C:\ltnc-agent\agent.yaml\"" /SC ONSTART /RU SYSTEM /RL HIGHEST /F`
+
 ### Roadmap
 
 - **Agent: Node.js (today) → Go static binary** — same `wss` + token protocol, drop‑in replacement.
