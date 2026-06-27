@@ -14,7 +14,7 @@ const cfg = {
   token: '',
   intervalSec: 10,
   bufferMax: 3600,
-  mounts: ['/'],
+  mounts: process.platform === 'win32' ? ['C:\\'] : ['/'],
   systemdUnits: [],
   ports: [],
   execMetrics: [],
@@ -61,7 +61,10 @@ function flush() {
   for (const b of buffer) ws.send(JSON.stringify(b));
 }
 
+let collecting = false;
 async function tick() {
+  if (collecting) return;                       // 이전 collect 진행중(느린 Windows PS 등) → 이번 tick skip(PS 프로세스 다발 방지)
+  collecting = true;
   try {
     const metrics = await collect(cfg, cfg.intervalSec);
     if (!Object.keys(metrics).length) return;
@@ -70,6 +73,7 @@ async function tick() {
     while (buffer.length > cfg.bufferMax) buffer.shift();
     if (helloAcked && ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(batch));
   } catch (e) { console.error('[agent] collect 실패:', e.message); }
+  finally { collecting = false; }
 }
 
 console.log(`[agent] LTNC agent '${cfg.id}' → ${cfg.hub} (interval=${cfg.intervalSec}s)`);
