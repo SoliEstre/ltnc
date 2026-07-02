@@ -118,7 +118,11 @@ export function startServer(cfg, store, log = console, ext = {}) {
     if (req.method === 'GET' && u.pathname === '/api/me') {
       if (!ext.auth?.enabled) return J(res, 200, { user: null, auth: false });
       const s = ext.auth.sessionFrom(req);
-      return s ? J(res, 200, { user: s.user, auth: true }) : J(res, 401, { error: 'auth required' });
+      if (!s) return J(res, 401, { error: 'auth required' });
+      const headers = { 'content-type': 'application/json; charset=utf-8' };
+      if (s.renewed) headers['set-cookie'] = ext.auth.setCookie(s.sid); // sliding 연장분 쿠키 Max-Age 재발급
+      res.writeHead(200, headers);
+      return res.end(JSON.stringify({ user: s.user, auth: true }));
     }
     // ── M2: 보호 게이트 — auth 활성 시 /api/* (PUBLIC_API 제외) 세션 필수 ──
     if (ext.auth?.enabled && u.pathname.startsWith('/api/') && !PUBLIC_API.has(u.pathname)) {

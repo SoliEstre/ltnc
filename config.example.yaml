@@ -16,7 +16,7 @@ retention:
 #auth:
 #  user: admin
 #  passHash: scrypt$16384$8$1$<salt-hex>$<key-hex>
-#  sessionTtlSec: 86400          # 세션 유지 시간(초). 재기동 시엔 전원 재로그인
+#  sessionTtlSec: 2592000        # 세션 유지 시간(초, 기본 30일). 활동 시 자동 연장(sliding) + data/sessions.json 영속화(재기동에도 로그인 유지)
 
 # ── M2: 알림 룰 — 기본 룰 내장(디스크 85/93·CPU 90·메모리 92·서비스/포트 다운·인증서 14일·복제지연·체크실패·offline)
 # 동일 (server·metric·severity) 키는 덮어쓰기, 새 키는 추가. enabled: false 로 기본 룰 끄기.

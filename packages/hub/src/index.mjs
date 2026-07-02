@@ -13,7 +13,7 @@ const store = openStorage(cfg.dbPath, cfg.retention);
 
 // M2 확장 모듈 묶음 — server.mjs 가 라우팅에 사용 (전부 옵셔널, 없으면 해당 기능 비활성)
 const ext = {};
-ext.auth = createAuth(cfg.auth, console);                 // 인증 게이트 (config.auth 미설정 = 비활성 + 경고)
+ext.auth = createAuth(cfg.auth, console, cfg.dataDir);    // 인증 게이트 (dataDir = 세션 영속화·재기동 로그인 유지)
 ext.notifier = createNotifier({ cfg, store });            // webhook + 웹푸시 채널
 await ext.notifier.init();                                // VAPID 키 로드/생성 (푸시 활성 시)
 
