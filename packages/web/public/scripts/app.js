@@ -1191,13 +1191,14 @@ document.addEventListener("click", e => {
     if (e.target.closest?.(".ltnc_bell_btn") != null) appPageManager.bringPage("alerts");
 });
 
-// 4) 메인 메뉴 항목 동작 (컷오버 워룸 · 알림센터 · 로그아웃) — mainMenu.html 의 인라인 onclick 에서 호출.
+// 4) 메인 메뉴 항목 동작 (컷오버 워룸 · 알림센터 · 업데이트 확인 · 로그아웃) — mainMenu.html 의 인라인 onclick 에서 호출.
 //   EstreUI 가 메뉴 섹션의 클릭 전파를 차단해 document 위임 바인딩이 안 먹힘(back_navigation 과 동일 패턴).
 //   인라인 onclick 은 타깃에서 직접 실행돼 확실히 동작 — window 노출로 인라인 스코프에서 접근.
 window.ltncMenuAction = (action) => {
     try { estreUi.closeMainMenu(); } catch (exc) { /* 메뉴 닫기 실패해도 동작 진행 */ }
     if (action === "warroom") appPageManager.bringPage("warroom");
     else if (action === "alerts") appPageManager.bringPage("alerts");
+    else if (action === "update") Promise.resolve(appActionManager.checkUpdate()).catch(exc => window.note?.("업데이트 확인에 실패했어요 — 네트워크 상태를 확인해 주세요"));
     else if (action === "logout") ltncLogout();
 };
 

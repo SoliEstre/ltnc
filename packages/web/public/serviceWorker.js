@@ -1,7 +1,8 @@
-const INSTALLATION_VERSION_NAME = "ltnc-0.1.0-r20260626b";
+const INSTALLATION_VERSION_NAME = "ltnc-0.1.0-r20260702";
 // ^^ LTNC PWA 릴리스 버전 — 앱 파일 변경 시 이 값을 올려서 캐시 갱신
 //    r20260626: 라이트모드 컬러셋(main.css·ltnc-charts.js) — 기존 PWA 캐시 무효화
 //    r20260626b: 타일 라이트모드(게이지 트랙·카드/뱃지 보더 흰색-알파→토큰)
+//    r20260702: 메인메뉴 업데이트 확인 버튼(mainMenu.html·app.js — appActionManager.checkUpdate)
 
 const INSTALLATION_FILE_LIST = [
     "./serviceWorker.js",
