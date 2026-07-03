@@ -17,7 +17,9 @@ export function createCheckRunner({ cfg, ingest, log = console }) {
       const res = await fetch(c.url, {
         method: c.method || 'GET',
         redirect: 'follow',
-        headers: { 'user-agent': 'LTNC-check/1.0' },
+        // c.headers/c.body 지원(POST 헬스 등) — 미지정 시 종전과 동일(GET·본문 없음).
+        headers: { 'user-agent': 'LTNC-check/1.0', ...(c.headers || {}) },
+        body: c.body != null ? (typeof c.body === 'string' ? c.body : JSON.stringify(c.body)) : undefined,
         signal: AbortSignal.timeout((Number(c.timeoutSec) || 10) * 1000),
       });
       ms = Date.now() - t0;
