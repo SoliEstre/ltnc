@@ -104,10 +104,10 @@ export function startServer(cfg, store, log = console, ext = {}) {
       if (!ext.auth?.enabled) return J(res, 200, { ok: true, user: null, note: '인증 비활성' });
       let body;
       try { body = JSON.parse(await readBody(req)); } catch { return J(res, 400, { error: 'bad json' }); }
-      const sid = ext.auth.login(body?.user, body?.pass);
-      if (!sid) return J(res, 401, { error: '아이디 또는 비밀번호가 올바르지 않아요' });
-      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'set-cookie': ext.auth.setCookie(sid) });
-      return res.end(JSON.stringify({ ok: true, user: String(body.user) }));
+      const session = ext.auth.login(body?.user, body?.pass);
+      if (!session) return J(res, 401, { error: '아이디 또는 비밀번호가 올바르지 않아요' });
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'set-cookie': ext.auth.setCookie(session.sid) });
+      return res.end(JSON.stringify({ ok: true, user: session.user, home: session.home || null }));
     }
     if (req.method === 'POST' && u.pathname === '/api/logout') {
       const headers = { 'content-type': 'application/json; charset=utf-8' };
@@ -122,7 +122,7 @@ export function startServer(cfg, store, log = console, ext = {}) {
       const headers = { 'content-type': 'application/json; charset=utf-8' };
       if (s.renewed) headers['set-cookie'] = ext.auth.setCookie(s.sid); // sliding 연장분 쿠키 Max-Age 재발급
       res.writeHead(200, headers);
-      return res.end(JSON.stringify({ user: s.user, auth: true }));
+      return res.end(JSON.stringify({ user: s.user, auth: true, home: s.home || null }));
     }
     // ── M2: 보호 게이트 — auth 활성 시 /api/* (PUBLIC_API 제외) 세션 필수 ──
     if (ext.auth?.enabled && u.pathname.startsWith('/api/') && !PUBLIC_API.has(u.pathname)) {
@@ -190,6 +190,16 @@ export function startServer(cfg, store, log = console, ext = {}) {
     if (req.method === 'GET' && u.pathname === '/api/checks') {
       const list = ext.checks?.status() || [];
       return J(res, 200, { checks: hideChecks.size ? list.filter(c => !hideChecks.has(c.id)) : list });
+    }
+
+    // ── 통계 탭 (ClickHouse allowlist 조회 — config.stats 미설정 시 503) ──
+    if (req.method === 'GET' && u.pathname.startsWith('/api/stats/')) {
+      if (!ext.stats?.enabled) return J(res, 503, { error: '통계 비활성 (config.stats.enabled)' });
+      const name = u.pathname.slice('/api/stats/'.length);
+      try {
+        const out = await ext.stats.query(name, u.searchParams);
+        return out ? J(res, 200, out) : J(res, 404, { error: 'unknown stat', name });
+      } catch (e) { return J(res, 502, { error: 'clickhouse', detail: String(e?.message || e) }); }
     }
 
     // ── M2: AI 다이제스트 ──

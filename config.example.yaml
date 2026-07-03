@@ -17,6 +17,11 @@ retention:
 #  user: admin
 #  passHash: scrypt$16384$8$1$<salt-hex>$<key-hex>
 #  sessionTtlSec: 2592000        # 세션 유지 시간(초, 기본 30일). 활동 시 자동 연장(sliding) + data/sessions.json 영속화(재기동에도 로그인 유지)
+#  home: stats                   # (선택) 로그인 직후 이동할 루트탭 id — 예: 통계 탭 직행
+#  users:                        # (선택) 추가 계정 — 각자 passHash, 계정별 home 지정 가능
+#    - user: viewer
+#      passHash: scrypt$16384$8$1$<salt-hex>$<key-hex>
+#      home: stats
 
 # ── M2: 알림 룰 — 기본 룰 내장(디스크 85/93·CPU 90·메모리 92·서비스/포트 다운·인증서 14일·복제지연·체크실패·offline)
 # 동일 (server·metric·severity) 키는 덮어쓰기, 새 키는 추가. enabled: false 로 기본 룰 끄기.
@@ -46,3 +51,13 @@ retention:
 #  model: claude-haiku-4-5
 #  apiKey: ''
 #  intervalSec: 900
+
+# ── 통계 탭 (ClickHouse allowlist 조회 — 미설정 시 비활성, 웹 통계 탭은 '불러오기 실패' 표시) ──
+# 체크러너 헤더/바디: checks 항목에 method/headers/body 지정 가능 (예: POST 헬스체크)
+#stats:
+#  enabled: true
+#  url: http://clickhouse:8123   # CH HTTP 엔드포인트 (docker 내부망 권장 — 외부 미게시)
+#  db: mydb
+#  user: ltnc_reader             # read-only 계정 권장
+#  pass: ''
+#  timeoutSec: 30

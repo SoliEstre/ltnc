@@ -1,4 +1,5 @@
-// auth.mjs — 간단 인증 게이트(단일 계정 + 영속 세션) — M2 계약 §인증
+// auth.mjs — 간단 인증 게이트(다중 계정 + 영속 세션) — M2 계약 §인증
+// 계정: 레거시 단일(auth.user/passHash) + auth.users[]({user,passHash,home?}) 병행 — home = 로그인 직후 이동 루트탭.
 // passHash 형식: scrypt$N$r$p$salt(hex)$key(hex)
 // 해시 생성 CLI: node packages/hub/src/auth.mjs <비밀번호>
 // 세션: 메모리 Map + dataDir/sessions.json 영속화(재기동해도 로그인 유지) + sliding 연장(활동 시 자동 연장).
@@ -48,14 +49,25 @@ export function parseCookies(header) {
  * dataDir 전달 시 세션을 dataDir/sessions.json 에 영속화(재기동 유지). 미전달 = 메모리-only(종전 동작).
  */
 export function createAuth(authCfg, log = console, dataDir = null) {
-  const enabled = !!(authCfg && authCfg.user && authCfg.passHash);
+  // 계정 목록 = 레거시 단일(user/passHash) + users[]({user,passHash,home?}) — user·passHash 둘 다 있는 항목만 유효.
+  //   home = 로그인 직후 이동할 루트탭 id(예 'stats') — login/me 응답으로 web 에 전달.
+  const accounts = [];
+  if (authCfg?.user && authCfg?.passHash) accounts.push({ user: String(authCfg.user), passHash: authCfg.passHash, home: authCfg.home ? String(authCfg.home) : null });
+  for (const a of (Array.isArray(authCfg?.users) ? authCfg.users : [])) {
+    if (a?.user && a?.passHash) accounts.push({ user: String(a.user), passHash: a.passHash, home: a.home ? String(a.home) : null });
+  }
+  const enabled = accounts.length > 0;
   if (!authCfg) {
     log.warn('[auth] config.auth 미설정 — API/WS 보호 비활성(기존 동작 유지). 외부 노출 시 설정을 권장해요');
   } else if (!enabled) {
     log.warn('[auth] config.auth 가 불완전(user·passHash 필요) — 인증 비활성으로 기동해요');
+  } else {
+    log.log(`[auth] 계정 ${accounts.length}개 활성 (${accounts.map(a => a.user + (a.home ? `→${a.home}` : '')).join(', ')})`);
   }
   const ttlSec = Number(authCfg?.sessionTtlSec) || 2592000; // 기본 30일 — sliding 연장이라 활동 중엔 사실상 무기한
-  const sessions = new Map(); // sid -> { user, expires(ms) }
+  const sessions = new Map(); // sid -> { user, home, expires(ms) }
+  // 미존재 계정 시도용 더미 해시 — 항상 1회 scrypt 계산해 타이밍 균일화
+  const dummyHash = hashPassword(crypto.randomBytes(16).toString('hex'));
 
   // ── 영속화: 부팅 시 복원(만료분 제외) + 변경 시 디바운스 저장 (vapid.json 과 같은 dataDir 패턴) ──
   const storePath = (enabled && dataDir) ? path.join(dataDir, 'sessions.json') : null;
@@ -63,7 +75,7 @@ export function createAuth(authCfg, log = console, dataDir = null) {
     try {
       const raw = JSON.parse(fs.readFileSync(storePath, 'utf8'));
       const t = Date.now();
-      for (const [sid, s] of Object.entries(raw)) if (s && s.expires > t) sessions.set(sid, { user: s.user, expires: s.expires });
+      for (const [sid, s] of Object.entries(raw)) if (s && s.expires > t) sessions.set(sid, { user: s.user, home: s.home ?? null, expires: s.expires });
       log.log(`[auth] 세션 ${sessions.size}건 복원 — 재기동에도 로그인 유지 (${storePath})`);
     } catch (e) { log.warn(`[auth] 세션 파일 복원 실패 — 빈 상태로 시작: ${e.message}`); }
   }
@@ -86,19 +98,22 @@ export function createAuth(authCfg, log = console, dataDir = null) {
     if (removed) persist();
   }, 600 * 1000).unref();
 
-  /** 로그인 시도 — 성공 시 세션 id, 실패 시 null. 사용자명·비밀번호 모두 상수시간 비교 */
+  /** 로그인 시도 — 성공 시 { sid, user, home }, 실패 시 null. 사용자명 상수시간 비교 + 항상 1회 scrypt */
   function login(user, pass) {
     if (!enabled) return null;
-    const userOk = crypto.timingSafeEqual(sha256(user ?? ''), sha256(authCfg.user));
-    const passOk = verifyPassword(pass ?? '', authCfg.passHash); // user 불일치여도 항상 계산(타이밍 균일화)
-    if (!(userOk && passOk)) return null;
+    let matched = null;
+    for (const a of accounts) {
+      if (crypto.timingSafeEqual(sha256(user ?? ''), sha256(a.user))) matched = a;
+    }
+    const passOk = verifyPassword(pass ?? '', matched ? matched.passHash : dummyHash); // 미존재 계정도 동일 비용
+    if (!(matched && passOk)) return null;
     const sid = crypto.randomBytes(32).toString('base64url');
-    sessions.set(sid, { user: String(authCfg.user), expires: Date.now() + ttlSec * 1000 });
+    sessions.set(sid, { user: matched.user, home: matched.home, expires: Date.now() + ttlSec * 1000 });
     persist();
-    return sid;
+    return { sid, user: matched.user, home: matched.home };
   }
 
-  /** 요청 쿠키에서 유효 세션 조회 → { user, sid, renewed } | null.
+  /** 요청 쿠키에서 유효 세션 조회 → { user, home, sid, renewed } | null.
    *  sliding: 남은 수명이 절반 아래면 활동 시점 기준으로 연장(renewed=true → 라우트에서 쿠키 재발급). */
   function sessionFrom(req) {
     const sid = parseCookies(req.headers?.cookie)[COOKIE];
@@ -109,7 +124,7 @@ export function createAuth(authCfg, log = console, dataDir = null) {
     if (s.expires < t) { sessions.delete(sid); persist(); return null; }
     let renewed = false;
     if (s.expires - t < ttlSec * 500) { s.expires = t + ttlSec * 1000; renewed = true; persist(); }
-    return { user: s.user, sid, renewed };
+    return { user: s.user, home: s.home ?? null, sid, renewed };
   }
 
   /** 요청의 세션 폐기 (로그아웃) */

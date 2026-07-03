@@ -43,6 +43,23 @@
                 </article>
             </div>
         </section>
+        <!-- 통계 탭 콘텐츠 — fixedBottom rootbar data-tab-id="stats" 와 id 일치. 핸들러 = app.js LTNCStatsPage (config.stats 활성 시 데이터 표시) -->
+        <section id="stats" class="root_tab_content" data-static="1">
+            <div class="container vfv_scroll" data-container-id="root" data-static="1" data-title="통계">
+                <article class="fwvs" data-article-id="main" data-static="1" data-title="통계">
+                    <div class="ltnc_detail_bar">
+                        <div class="ltnc_detail_title">
+                            <h1>통계</h1>
+                            <span class="ltnc_detail_host">서비스 통계 (ClickHouse)</span>
+                        </div>
+                        <!-- 추세 단위 셀렉터는 app.js LTNCStatsPage 가 '추세' 섹션 헤더에 렌더 -->
+                    </div>
+                    <div id="statsGrid">
+                        <!-- app.js LTNCStatsPage 가 상단 고정 섹션 네비 + 섹션·카드 채움 -->
+                    </div>
+                </article>
+            </div>
+        </section>
         <!-- 탭 밖 추가 루트 컴포넌트 접근용 (림 기본 구조 — 유지) -->
         <section id="more" class="modal fit bottom right stickyRootbar" data-static="1">
             <div class="container vfv_scroll" data-container-id="root" data-static="1">

@@ -13,12 +13,13 @@ const DEFAULTS = {
   rollupIntervalSec: 300,
   offlineAfterSec: 90,           // 마지막 batch 후 이 시간 지나면 offline 판정
   // ── M2 ──
-  auth: null,                    // { user, passHash(scrypt$N$r$p$salt$hex), sessionTtlSec } — 미설정 시 보호 비활성
+  auth: null,                    // { user, passHash(scrypt$N$r$p$salt$hex), sessionTtlSec, home?, users?:[{user,passHash,home?}] } — 미설정 시 보호 비활성. home=로그인 직후 이동 루트탭 id
   rules: [],                     // 알림 룰 추가/덮어쓰기 (기본 룰은 alerts.mjs 내장)
   notify: {},                    // { cooldownSec?, webhooks:[{name,url,severities?}], push:{enabled,subject?} }
   checks: [],                    // [{ id, url, method?, keyword?, intervalSec?, timeoutSec? }]
   hideChecks: [],                // 화면 표시 제외할 외부 체크 id 목록 — DB(시리즈/데이터) 는 보존, 대시보드 카드·워룸에서만 숨김
   ai: {},                        // { model?, apiKey?, intervalSec? } — packages/ai 다이제스트
+  stats: {},                     // { enabled, url, db, user, pass, timeoutSec? } — ClickHouse 통계 탭 조회(미설정 시 비활성)
 };
 
 export function loadConfig(file) {

@@ -415,6 +415,7 @@ class LTNCPagesProvider {
         "server": "&b=server",      // 서버 상세 (instantDoc blinded 섹션)
         "alerts": "&b=alerts",      // M2: 알림센터 (instantDoc blinded 섹션)
         "warroom": "&b=warroom",    // M2: 컷오버 워룸 (instantDoc blinded 섹션)
+        "stats": "&m=stats",        // 통계 (staticDoc rootbar 탭 — config.stats 활성 시 사용)
     }; }
 
 
@@ -432,6 +433,7 @@ class LTNCPagesProvider {
     "server" = LTNCServerDetailPage;
     "alerts" = LTNCAlertsPage;      // M2 (클래스 정의는 아래 M2 블록 — 인스턴스화 시점엔 초기화 완료)
     "warroom" = LTNCWarroomPage;    // M2
+    "stats" = LTNCStatsPage;        // 통계 (클래스 정의는 아래 블록 — 인스턴스화 시점엔 완료)
 
 }
 
@@ -562,6 +564,8 @@ async function ltncSubmitLogin(e) {
             window.LTNC?.reconnect?.();
             ltncLoadAlerts(true);
             window.note?.("로그인했어요");
+            // 계정별 홈탭(home, 예 mpsol→stats) — 로그인 직후 해당 루트탭으로 전환
+            try { const me = await r.json(); if (me?.home) ltncGoHomeTab(me.home); } catch (exc) { /* 응답 파싱 실패 무시 */ }
         } else if (r.status === 401) {
             errEl.textContent = "아이디 또는 비밀번호가 올바르지 않아요";
             errEl.hidden = false;
@@ -1191,6 +1195,625 @@ document.addEventListener("click", e => {
     if (e.target.closest?.(".ltnc_bell_btn") != null) appPageManager.bringPage("alerts");
 });
 
+
+// ══ 통계 (ClickHouse /api/stats/*) — 현황/추세/분포/패턴 4섹션 (예시) ══════════════
+// hub stats.mjs 응답(kind: table|dist|series|bars) 렌더. 추세는 공통 일/주/월/분기/년 셀렉터(추세 섹션 헤더). uPlot 직접.
+// 요일/월중일자: 섹션 헤더 토글(단위추세=기본/누적평균). 각 그래프 ⛶ 전체화면. 상단 고정 섹션 네비.
+const LTNC_STATS_BUCKETS = [["일", "d"], ["주", "w"], ["월", "m"], ["분기", "q"], ["년", "y"]];
+const LTNC_STATS_PALETTE = ["#ff9500", "#4a9eff", "#34c759", "#ff375f", "#af52de", "#00c7be", "#ffcc00", "#a2845e", "#5ac8fa", "#ff6482", "#30d158", "#bf5af2"];
+let ltncStatsBucket = "w";   // 추세 기본 단위 = 주
+// 그래프 크기 프리셋 — 기본(그리드 col+높이 s/m/l) / 전체폭(1열, 높이만 fs/fm/fl). col=100% → 1열.
+const LTNC_STATS_SIZES = {
+    s: { label: "소", col: "340px", h: 200, cbars: 150 },
+    m: { label: "중", col: "520px", h: 300, cbars: 220 },
+    l: { label: "대", col: "760px", h: 420, cbars: 300 },
+    fs: { label: "소", col: "100%", h: 260, cbars: 190 },
+    fm: { label: "중", col: "100%", h: 440, cbars: 300 },
+    fl: { label: "대", col: "100%", h: 640, cbars: 440 },
+};
+let ltncStatsSize = LTNC_STATS_SIZES[localStorage.getItem("ltnc.statsSize")] ? localStorage.getItem("ltnc.statsSize") : "s";
+// 추세 구간(일수) 선택지 + 단위별 기본값(일→32·주→96·월→192·분기→384·년→1280).
+const LTNC_STATS_RANGES = [8, 16, 32, 96, 192, 384, 1280];
+const LTNC_STATS_RANGE_DEFAULT = { d: 32, w: 96, m: 192, q: 384, y: 1280 };
+let ltncStatsRange = LTNC_STATS_RANGE_DEFAULT[ltncStatsBucket] || 192;
+
+function ltncStatsEnsureCss() {
+    if (document.getElementById("ltncStatsCss")) return;
+    const s = document.createElement("style");
+    s.id = "ltncStatsCss";
+    s.textContent =
+        ".ltnc_stats_section{margin:0 0 4px}" +
+        ".ltnc_stats_sechead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 2px;padding:6px 12px;border-bottom:1px solid var(--ltnc-border,rgba(127,127,127,.22));position:sticky;top:var(--ltnc-nav-h,46px);z-index:15;background:color-mix(in srgb,var(--ltnc-bg,#101216) 92%,transparent);backdrop-filter:blur(4px)}" +
+        ".ltnc_stats_sechead h2{margin:0;border:0;padding:0;font-size:15px;color:var(--ltnc-text,#e8eaed)}" +
+        ".ltnc_stats_sechead .ltnc_stats_ctl{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}" +
+        ".ltnc_stats_section>.desc{margin:2px 12px 4px;font-size:12px;color:var(--ltnc-dim,#9aa0a6)}" +
+        ".ltnc_stats_seg{display:flex;gap:4px;align-items:center}" +
+        ".ltnc_stats_seg .ltnc_ctl_label{color:var(--ltnc-dim,#9aa0a6);font-size:12px;margin-right:2px}" +
+        ".ltnc_stats_seg button{padding:4px 10px;border:1px solid color-mix(in srgb,var(--ltnc-border,#9aa0a6) 42%,transparent);border-radius:7px;background:transparent;color:var(--ltnc-text,#e8eaed);font-size:12px;cursor:pointer}" +
+        ".ltnc_stats_seg button[data-active='1']{border-color:var(--ltnc-accent,#ff9500);color:var(--ltnc-accent,#ff9500);background:color-mix(in srgb,var(--ltnc-accent,#ff9500) 16%,transparent);font-weight:600}" +
+        ".ltnc_stats_nav{position:sticky;top:0;z-index:20;display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;margin-bottom:2px;background:color-mix(in srgb,var(--ltnc-bg,#101216) 92%,transparent);backdrop-filter:blur(4px);border-bottom:1px solid color-mix(in srgb,var(--ltnc-border,#9aa0a6) 20%,transparent)}" +
+        ".ltnc_stats_nav button{padding:4px 12px;border:1px solid color-mix(in srgb,var(--ltnc-border,#9aa0a6) 42%,transparent);border-radius:16px;background:transparent;color:var(--ltnc-dim,#9aa0a6);font-size:12px;cursor:pointer}" +
+        ".ltnc_stats_nav button[data-active='1']{border-color:var(--ltnc-accent,#ff9500);color:var(--ltnc-accent,#ff9500);background:color-mix(in srgb,var(--ltnc-accent,#ff9500) 12%,transparent);font-weight:600}" +
+        ".ltnc_stats_sizectl{margin-left:auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}" +
+        ".ltnc_stats_szgroup{display:flex;gap:3px;align-items:center}" +
+        ".ltnc_stats_szgroup button{padding:3px 9px;border:1px solid color-mix(in srgb,var(--ltnc-border,#9aa0a6) 40%,transparent);border-radius:6px;background:transparent;color:var(--ltnc-dim,#9aa0a6);font-size:11px;cursor:pointer}" +
+        ".ltnc_stats_szgroup button[data-active='1']{border-color:var(--ltnc-accent,#ff9500);color:var(--ltnc-accent,#ff9500);background:color-mix(in srgb,var(--ltnc-accent,#ff9500) 14%,transparent);font-weight:600}" +
+        ".ltnc_stats_grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--ltnc-stats-col,340px),1fr));gap:14px;padding:8px 12px}" +
+        // 최신현황: 크기선택 무관 고정 3분할(반응형 3 → 2+1→ 1). auto-fit + 3개 항목이라 최대 3열.
+        ".ltnc_stats_grid_fixed3{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}" +
+        ".ltnc_stats_card{background:var(--ltnc-card,rgba(127,127,127,.06));border:1px solid var(--ltnc-border,rgba(127,127,127,.18));border-radius:12px;padding:12px 14px;min-height:110px;overflow:hidden}" +
+        ".ltnc_stats_card_head{display:flex;align-items:center;gap:8px;margin:0 0 8px}" +
+        ".ltnc_stats_card_head h3{margin:0;font-size:14px;color:var(--ltnc-text,#e8eaed);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+        ".ltnc_stats_expand{flex:none;padding:1px 7px;border:1px solid color-mix(in srgb,var(--ltnc-border,#9aa0a6) 40%,transparent);border-radius:6px;background:transparent;color:var(--ltnc-dim,#9aa0a6);font-size:12px;line-height:1.4;cursor:pointer}" +
+        ".ltnc_stats_expand:hover{border-color:var(--ltnc-accent,#ff9500);color:var(--ltnc-accent,#ff9500)}" +
+        ".ltnc_stats_table{width:100%;border-collapse:collapse;font-size:13px}" +
+        ".ltnc_stats_table th,.ltnc_stats_table td{padding:4px 8px;text-align:left;border-bottom:1px solid var(--ltnc-border,rgba(127,127,127,.12))}" +
+        ".ltnc_stats_table td.num,.ltnc_stats_table th.num{text-align:right;font-variant-numeric:tabular-nums}" +
+        ".ltnc_stats_bar{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;margin:6px 0;font-size:13px}" +
+        ".ltnc_stats_bar .k{color:var(--ltnc-text,#e8eaed);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+        ".ltnc_stats_bar .v{color:var(--ltnc-dim,#9aa0a6);font-variant-numeric:tabular-nums}" +
+        ".ltnc_stats_bar .track{grid-column:1/-1;height:6px;border-radius:4px;background:var(--ltnc-border,rgba(127,127,127,.15));overflow:hidden}" +
+        ".ltnc_stats_bar .fill{height:100%;background:var(--ltnc-accent,#ff9500);border-radius:4px}" +
+        ".ltnc_stats_empty{color:var(--ltnc-dim,#9aa0a6);font-size:13px;padding:8px 0}" +
+        ".ltnc_stats_chart{width:100%}" +
+        ".ltnc_cbars{display:flex;align-items:flex-end;gap:3px;height:var(--ltnc-cbars-h,150px);padding-top:6px}" +
+        ".ltnc_cbar{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%}" +
+        ".ltnc_cbar i{width:78%;background:var(--ltnc-accent,#ff9500);border-radius:3px 3px 0 0;min-height:1px}" +
+        ".ltnc_cbar span{font-size:10px;color:var(--ltnc-dim,#9aa0a6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}" +
+        // 컨텐츠 세로 스크롤 허용: 차트는 높이=컨텐츠에 딱 맞아 스크롤 안 생기고(범례는 absolute), 기기분포 등 긴 목록은 스크롤.
+        ".ltnc_stats_dv_body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px;position:relative}" +
+        // 상세뷰: uPlot 범례를 우상단 떠있는 박스로(차트 아래 배치 → 스크롤 방지). 대시보드 단독뷰와 동일 패턴.
+        ".ltnc_stats_dv_body .ltnc_stats_chart{height:100%}" +
+        ".ltnc_stats_dv_body .u-legend{display:block;position:absolute;top:10px;right:14px;margin:0;max-width:46%;max-height:74%;overflow:auto;background:color-mix(in srgb,var(--ltnc-card,#1a1d23) 90%,transparent);border:1px solid color-mix(in srgb,var(--ltnc-border,#9aa0a6) 24%,transparent);border-radius:8px;padding:5px 11px;z-index:5;font-variant-numeric:tabular-nums;text-align:left;white-space:nowrap;pointer-events:none}" +
+        // 범례: 항목(시리즈)마다 한 줄씩 — u-inline(한 줄 나열) 모드여도 강제 세로 스택. th=마커+라벨(좌), 값(우).
+        ".ltnc_stats_dv_body .u-legend tr,.ltnc_stats_dv_body .u-legend .u-series{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0}" +
+        ".ltnc_stats_dv_body .u-legend .u-value{text-align:right;min-width:70px}" +
+        // 히트맵(시간대×요일) — 셀 배경 = 값 비례 accent 알파
+        ".ltnc_heat{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}" +
+        ".ltnc_heat th{padding:1px 2px;text-align:center;color:var(--ltnc-dim,#9aa0a6);font-weight:500}" +
+        ".ltnc_heat th.h{width:32px;text-align:right;padding-right:4px}" +
+        ".ltnc_heat td{padding:1px 2px;text-align:center;color:var(--ltnc-text,#e8eaed);font-variant-numeric:tabular-nums;overflow:hidden;white-space:nowrap}";
+    document.head.appendChild(s);
+}
+
+async function ltncStatsFetch(name, params) {
+    const qs = (params && Object.keys(params).length) ? "?" + new URLSearchParams(params) : "";
+    const r = await fetch("/api/stats/" + name + qs);
+    if (!r.ok) throw new Error(name + " " + r.status);
+    return r.json();
+}
+
+// 동시 요청 제한(허브·CH 과부하 방지)
+async function ltncStatsPool(tasks, concurrency) {
+    let i = 0;
+    const run = async () => { while (i < tasks.length) { const t = tasks[i++]; try { await t(); } catch (e) { /* 무시 */ } } };
+    await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, run));
+}
+
+// title + (redraw 있으면) ⛶ 전체화면 버튼. redraw(container, {height}) 로 상세뷰에서 재렌더.
+function ltncStatsCardEl(title, redraw) {
+    const card = document.createElement("div"); card.className = "ltnc_stats_card";
+    const head = document.createElement("div"); head.className = "ltnc_stats_card_head";
+    const h = document.createElement("h3"); h.textContent = title || ""; h.title = title || ""; head.appendChild(h);
+    if (typeof redraw === "function") {
+        const ex = document.createElement("button"); ex.type = "button"; ex.className = "ltnc_stats_expand";
+        ex.textContent = "⛶"; ex.title = "전체화면으로 보기";
+        ex.addEventListener("click", (e) => { e.stopPropagation(); ltncStatsOpenDetail(title, redraw); });
+        head.appendChild(ex);
+    }
+    const body = document.createElement("div");
+    card.append(head, body);
+    return { card, head, body };
+}
+
+function ltncStatsRenderTable(body, d) {
+    const cols = d.columns || [];
+    const numCols = d.numCols || (cols.length ? [cols.length - 1] : []);   // 미지정 시 마지막 열만 우측정렬(하위호환)
+    const isNum = (i) => numCols.indexOf(i) !== -1;
+    const t = document.createElement("table"); t.className = "ltnc_stats_table";
+    const htr = document.createElement("tr");
+    cols.forEach((c, i) => { const th = document.createElement("th"); if (isNum(i)) th.className = "num"; th.textContent = c; htr.appendChild(th); });
+    const thead = document.createElement("thead"); thead.appendChild(htr); t.appendChild(thead);
+    const tb = document.createElement("tbody");
+    for (const row of (d.rows || [])) {
+        const tr = document.createElement("tr");
+        row.forEach((v, i) => { const td = document.createElement("td"); if (isNum(i)) td.className = "num"; td.textContent = (typeof v === "number") ? v.toLocaleString("ko-KR") : v; tr.appendChild(td); });
+        tb.appendChild(tr);
+    }
+    t.appendChild(tb); body.appendChild(t);
+}
+
+// opts.max = 인라인 표시 최대 항목수(초과분은 접고 ⛶ 안내). 상세뷰는 max 없이 전체.
+function ltncStatsRenderDist(body, d, opts) {
+    opts = opts || {};
+    const all = d.items || [];
+    const items = opts.max ? all.slice(0, opts.max) : all;
+    const max = items.reduce((m, x) => Math.max(m, x.cnt), 0) || 1;
+    for (const it of items) {
+        const row = document.createElement("div"); row.className = "ltnc_stats_bar";
+        const k = document.createElement("span"); k.className = "k"; k.textContent = it.key;
+        const v = document.createElement("span"); v.className = "v"; v.textContent = it.cnt.toLocaleString("ko-KR") + (it.pct != null ? " · " + it.pct + "%" : "");
+        const track = document.createElement("div"); track.className = "track";
+        const fill = document.createElement("div"); fill.className = "fill"; fill.style.width = Math.round(it.cnt * 100 / max) + "%";
+        track.appendChild(fill); row.append(k, v, track); body.appendChild(row);
+    }
+    if (!all.length) { const e = document.createElement("div"); e.className = "ltnc_stats_empty"; e.textContent = "데이터 없음"; body.appendChild(e); return; }
+    if (opts.max && all.length > opts.max) { const e = document.createElement("div"); e.className = "ltnc_stats_empty"; e.textContent = "⛶ 크게보기에서 전체 항목 표시"; body.appendChild(e); }
+    if (d.total != null) { const tot = document.createElement("div"); tot.className = "ltnc_stats_empty"; tot.textContent = "합계 " + d.total.toLocaleString("ko-KR"); body.appendChild(tot); }
+}
+
+// 상세뷰 전용 — 각 시리즈명을 마지막 데이터점 옆(선 끝)에 라벨로 그림(그래프 내 라벨). 캔버스px = pxRatio 반영.
+function ltncStatsLabelPlugin() {
+    return { hooks: { draw: (u) => {
+        const ctx = u.ctx; if (!ctx || !u.bbox) return;
+        const dpr = u.pxRatio || 1, bb = u.bbox;
+        ctx.save();
+        ctx.font = Math.round(11 * dpr) + "px sans-serif"; ctx.textBaseline = "middle";
+        for (let i = 1; i < u.series.length; i++) {
+            const s = u.series[i]; if (s.show === false) continue;
+            const yd = u.data[i]; if (!yd) continue;
+            let idx = -1; for (let j = yd.length - 1; j >= 0; j--) { if (yd[j] != null) { idx = j; break; } }
+            if (idx < 0) continue;
+            const cx = u.valToPos(u.data[0][idx], "x", true), cy = u.valToPos(yd[idx], "y", true);
+            const label = String(s.label || "").replace(/\s*\(.*\)$/, "");   // 단위 괄호 제거
+            ctx.fillStyle = LTNC_STATS_PALETTE[(i - 1) % LTNC_STATS_PALETTE.length];
+            const tw = ctx.measureText(label).width;
+            let tx = cx + 4 * dpr; ctx.textAlign = "left";
+            if (tx + tw > bb.left + bb.width) { tx = cx - 4 * dpr; ctx.textAlign = "right"; }
+            const yy = Math.max(bb.top + 7 * dpr, Math.min(bb.top + bb.height - 7 * dpr, cy));
+            ctx.fillText(label, tx, yy);
+        }
+        ctx.restore();
+    } } };
+}
+
+// 시계열(멀티 라인) — uPlot. d = {unit, series:[{name,points:[[unixSec,val]]}]}. opts.height 확대 · opts.detail 상세뷰(선끝 라벨).
+function ltncStatsRenderChart(body, d, opts) {
+    opts = opts || {};
+    const ser = d.series || [];
+    if (!window.uPlot) { const e = document.createElement("div"); e.className = "ltnc_stats_empty"; e.textContent = "차트 모듈 미로드"; body.appendChild(e); return null; }
+    const xset = new Set(); ser.forEach(s => (s.points || []).forEach(p => xset.add(p[0])));
+    const xs = [...xset].sort((a, b) => a - b);
+    if (xs.length < 2 && ser.reduce((n, s) => n + (s.points || []).length, 0) < 2) {
+        const e = document.createElement("div"); e.className = "ltnc_stats_empty";
+        e.textContent = xs.length ? "데이터 누적 중 (기간이 쌓이면 추세 표시)" : "데이터 없음"; body.appendChild(e); return null;
+    }
+    const idx = new Map(xs.map((t, i) => [t, i]));
+    const cols = ser.map(s => { const a = new Array(xs.length).fill(null); (s.points || []).forEach(p => { a[idx.get(p[0])] = p[1]; }); return a; });
+    const p2 = n => String(n).padStart(2, "0");
+    // ISO 주차(년-주차) — 주 단위 추세용. 목요일 기준 표준 ISO week.
+    const isoWeek = t => {
+        const dt = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()));
+        const dn = (dt.getUTCDay() + 6) % 7; dt.setUTCDate(dt.getUTCDate() - dn + 3);
+        const thu = dt.getTime(); dt.setUTCMonth(0, 1);
+        if (dt.getUTCDay() !== 4) dt.setUTCMonth(0, 1 + ((4 - dt.getUTCDay()) + 7) % 7);
+        return [new Date(thu).getUTCFullYear(), 1 + Math.round((thu - dt.getTime()) / 604800000)];
+    };
+    // x축 눈금 표기: xunit 우선(isoweek=년-주차 / month=년-월), 없으면 버킷 간격 자동(년→YYYY / 월·분기→YYYY-MM / 주·일→MM-DD, 단 다년치면 YY-MM-DD 로 년도 표기)
+    const DAY = 86400;
+    const step = xs.length > 1 ? (xs[xs.length - 1] - xs[0]) / (xs.length - 1) : 0;
+    // 전 기간처럼 데이터가 여러 해에 걸치면 일/주 라벨에도 년도(YY)를 붙여 연도 구분 (예: 24-07-15)
+    const multiYear = xs.length > 1 && new Date(xs[0] * 1000).getFullYear() !== new Date(xs[xs.length - 1] * 1000).getFullYear();
+    const fmt = ts => { if (ts == null) return ""; const t = new Date(ts * 1000);
+        if (d.xunit === "isoweek") { const [y, w] = isoWeek(t); return (y % 100) + "-" + w + "주"; }
+        if (d.xunit === "month" || (step >= 24 * DAY && step < 300 * DAY)) return t.getFullYear() + "-" + p2(t.getMonth() + 1);
+        if (step >= 300 * DAY) return String(t.getFullYear());
+        return (multiYear ? (t.getFullYear() % 100) + "-" : "") + p2(t.getMonth() + 1) + "-" + p2(t.getDate()); };
+    // 눈금(세로줄)은 선택한 단위 시점(각 버킷)에만 = splits=xs. 라벨은 과밀 방지 stride 적용(세로줄은 유지).
+    const xSplits = () => xs;
+    const xValues = (u, sp) => { const stride = Math.max(1, Math.ceil(sp.length / 12)); return sp.map((ts, i) => (i % stride === 0) ? fmt(ts) : ""); };
+    const dim = (getComputedStyle(document.body).getPropertyValue("--ltnc-dim") || "#9aa0a6").trim();
+    const mount = document.createElement("div"); mount.className = "ltnc_stats_chart"; body.appendChild(mount);
+    const H = opts.height || 200;
+    const uo = {
+        width: Math.max(mount.clientWidth || body.clientWidth || 300, 240), height: H,
+        series: [{ value: (u, ts) => ts == null ? "" : fmt(ts) }].concat(ser.map((s, i) => ({
+            label: s.name + (d.unit ? " (" + d.unit + ")" : ""), stroke: LTNC_STATS_PALETTE[i % LTNC_STATS_PALETTE.length],
+            width: 1.5, points: { show: xs.length < 8 }, value: (u, v) => v == null ? "–" : v.toLocaleString("ko-KR"),
+        }))),
+        scales: { x: { time: true } },
+        axes: [
+            { stroke: dim, grid: { stroke: "rgba(127,127,127,.14)" }, ticks: { stroke: "rgba(127,127,127,.25)" }, font: "11px sans-serif", splits: xSplits, values: xValues },
+            { stroke: dim, grid: { stroke: "rgba(127,127,127,.14)" }, ticks: { stroke: "rgba(127,127,127,.25)" }, font: "11px sans-serif", size: 54, values: (u, sp) => sp.map(v => v == null ? "" : v.toLocaleString("ko-KR")) },
+        ],
+        legend: { live: true }, cursor: { points: { size: 6 }, drag: { x: false, y: false, setScale: false } },   // 드래그 확대(zoom) 비활성
+        plugins: opts.detail ? [ltncStatsLabelPlugin()] : [],
+    };
+    const u = new uPlot(uo, [xs, ...cols], mount);
+    return { u, mount, h: H };
+}
+
+// 히트맵(시간대×요일) — d = {xcats, ycats, values[y][x]}. 셀 배경 = 값/최대 비례 accent.
+function ltncStatsCompactNum(v) {
+    return v >= 1e6 ? (v / 1e6).toFixed(1) + "M" : v >= 1e3 ? (v / 1e3).toFixed(v >= 1e4 ? 0 : 1) + "k" : String(v);
+}
+function ltncStatsRenderHeat(body, d, opts) {
+    opts = opts || {};
+    const vals = d.values || [];
+    const max = Math.max(1, ...vals.flat());
+    const t = document.createElement("table"); t.className = "ltnc_heat";
+    const trh = document.createElement("tr");
+    trh.appendChild(document.createElement("th"));
+    (d.xcats || []).forEach(x => { const th = document.createElement("th"); th.textContent = x; trh.appendChild(th); });
+    t.appendChild(trh);
+    (d.ycats || []).forEach((y, yi) => {
+        const tr = document.createElement("tr");
+        const th = document.createElement("th"); th.className = "h"; th.textContent = y; tr.appendChild(th);
+        (d.xcats || []).forEach((x, xi) => {
+            const v = (vals[yi] || [])[xi] || 0;
+            const td = document.createElement("td");
+            td.style.background = "color-mix(in srgb, var(--ltnc-accent,#ff9500) " + Math.round(v * 72 / max) + "%, transparent)";
+            td.textContent = opts.detail ? v.toLocaleString("ko-KR") : ltncStatsCompactNum(v);
+            td.title = y + " " + x + ": " + v.toLocaleString("ko-KR");
+            tr.appendChild(td);
+        });
+        t.appendChild(tr);
+    });
+    body.appendChild(t);
+}
+
+// 카테고리 막대(요일/월중일자) — HTML. oneSeries = {name, values:[...]}. opts.height 로 상세뷰 확대.
+function ltncStatsRenderBars(body, categories, oneSeries, opts) {
+    opts = opts || {};
+    const vals = oneSeries.values || [];
+    const max = vals.reduce((m, v) => Math.max(m, v || 0), 0) || 1;
+    const wrap = document.createElement("div"); wrap.className = "ltnc_cbars";
+    if (opts.height) wrap.style.height = opts.height + "px";
+    (categories || []).forEach((cat, i) => {
+        const v = vals[i] || 0;
+        const col = document.createElement("div"); col.className = "ltnc_cbar"; col.title = cat + ": " + v.toLocaleString("ko-KR");
+        const bar = document.createElement("i"); bar.style.height = Math.round(v * 100 / max) + "%";
+        const lbl = document.createElement("span"); lbl.textContent = cat;
+        col.append(bar, lbl); wrap.appendChild(col);
+    });
+    body.appendChild(wrap);
+    if (!vals.length) { const e = document.createElement("div"); e.className = "ltnc_stats_empty"; e.textContent = "데이터 없음"; body.appendChild(e); }
+}
+
+// 전체화면 단독 그래프 오버레이 — redraw(container,{height}) 로 큰 사이즈 재렌더. uPlot 은 리사이즈 추종.
+function ltncStatsOpenDetail(title, redraw) {
+    const overlay = document.createElement("div"); overlay.className = "ltnc_dv_overlay";
+    const panel = document.createElement("div"); panel.className = "ltnc_dv_panel";
+    const head = document.createElement("div"); head.className = "ltnc_dv_head";
+    const ttl = document.createElement("div"); ttl.className = "ltnc_dv_title"; ttl.textContent = title || "";
+    const close = document.createElement("button"); close.type = "button"; close.className = "ltnc_dv_btn ltnc_dv_close"; close.textContent = "✕";
+    close.style.marginLeft = "auto";   // 닫기 버튼 우측 끝
+    head.append(ttl, close);
+    const bodyWrap = document.createElement("div"); bodyWrap.className = "ltnc_stats_dv_body";
+    panel.append(head, bodyWrap); overlay.appendChild(panel); document.body.appendChild(overlay);
+
+    let handle = null;
+    // 범례가 우상단 떠있는 박스(absolute)라 세로공간 안 먹음 → 컨텐츠 높이 꽉 채워 스크롤 없음.
+    const avail = () => Math.max((bodyWrap.clientHeight || 420) - 28, 260);
+    const draw = () => { bodyWrap.innerHTML = ""; handle = redraw(bodyWrap, { height: avail(), detail: true }); };
+    draw();
+
+    const onResize = () => {
+        if (handle && handle.u) { try { handle.u.setSize({ width: Math.max((bodyWrap.clientWidth || 300) - 2, 240), height: avail() }); } catch (e) { /* 무시 */ } }
+        else draw();   // 막대/분포 등 비 uPlot 은 재렌더로 리핏
+    };
+    const onKey = (e) => { if (e.key === "Escape") done(); };
+    function done() {
+        window.removeEventListener("resize", onResize);
+        document.removeEventListener("keydown", onKey);
+        if (handle && handle.u) { try { handle.u.destroy(); } catch (e) { /* 무시 */ } }
+        overlay.remove();
+    }
+    window.addEventListener("resize", onResize);
+    document.addEventListener("keydown", onKey);
+    overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) done(); });
+    close.addEventListener("click", done);
+}
+
+// ── 페이지 핸들러: 통계 (staticDoc rootbar 탭) ──
+class LTNCStatsPage extends EstrePageHandler {
+
+    #charts = [];       // [{u, mount, h, sec}] — sec 로 섹션별 파기
+    #ro = null;
+    #navObs = null;
+    #loaded = false;
+    #lastLoad = 0;
+    #dowMode = "trend";   // 단위추세(기본) | avg(누적평균)
+    #domMode = "trend";
+    #savedScroll = 0;
+    #onScroll = null;
+    #onWinFocus = null;
+
+    onBring(handle) { ltncStatsEnsureCss(); this.#buildFrame(); this.#installScrollGuard(); }
+
+    onShow(handle) {   // 탭 열릴 때마다 (최초 or 5분 초과 시 새로고침 — 과다 방지)
+        if (!this.#loaded || (Date.now() - this.#lastLoad) > 300000) this.#loadAll();
+    }
+
+    onClose(handle) {
+        this.#destroyCharts();
+        if (this.#navObs) { try { this.#navObs.disconnect(); } catch (e) { /* 무시 */ } this.#navObs = null; }
+        this.#removeScrollGuard();
+    }
+
+    // 스크롤 컨테이너(정적 탭 뷰포트)
+    #scrollEl() { const g = document.getElementById("statsGrid"); return g ? g.closest(".vfv_scroll") : null; }
+    // 다른 창 갔다 돌아올 때(window focus) 자동 focus 로 스크롤이 위로 튀는 것 방지 — 마지막 위치 복원.
+    #installScrollGuard() {
+        if (this.#onWinFocus) return;
+        this.#onScroll = () => { const el = this.#scrollEl(); if (el) this.#savedScroll = el.scrollTop; };
+        this.#onWinFocus = () => {
+            const el = this.#scrollEl(); if (!el) return; const y = this.#savedScroll;
+            requestAnimationFrame(() => { el.scrollTop = y; requestAnimationFrame(() => { el.scrollTop = y; }); });
+        };
+        const el = this.#scrollEl(); if (el) el.addEventListener("scroll", this.#onScroll, { passive: true });
+        window.addEventListener("focus", this.#onWinFocus);
+    }
+    #removeScrollGuard() {
+        const el = this.#scrollEl(); if (el && this.#onScroll) el.removeEventListener("scroll", this.#onScroll);
+        if (this.#onWinFocus) window.removeEventListener("focus", this.#onWinFocus);
+        this.#onScroll = null; this.#onWinFocus = null;
+    }
+
+    // 섹션 네비 실제 높이 → 섹션 제목줄 sticky top 오프셋(CSS 변수)
+    #syncNavHeight() {
+        const grid = document.getElementById("statsGrid"), nav = document.getElementById("statsSectionNav");
+        if (grid && nav) grid.style.setProperty("--ltnc-nav-h", nav.offsetHeight + "px");
+    }
+
+    #destroyCharts() {
+        for (const c of this.#charts) { try { c.u.destroy(); } catch (e) { /* 무시 */ } }
+        this.#charts = [];
+    }
+    #destroySection(sec) {   // 섹션 재렌더 전 그 섹션 차트만 파기
+        this.#charts = this.#charts.filter(c => { if (c.sec === sec) { try { c.u.destroy(); } catch (e) { /* 무시 */ } return false; } return true; });
+    }
+
+    #buildFrame() {
+        const grid = document.getElementById("statsGrid");
+        if (grid && typeof ResizeObserver !== "undefined" && !this.#ro) {
+            this.#ro = new ResizeObserver(() => {
+                this.#syncNavHeight();   // 네비 rewrap 대응
+                for (const c of this.#charts) { try { c.u.setSize({ width: Math.max(c.mount.clientWidth || 0, 240), height: c.h || 200 }); } catch (e) { /* 무시 */ } }
+            });
+            this.#ro.observe(grid);
+        }
+    }
+
+    // 섹션 셸(제목줄 + 컨트롤 슬롯 + 카드 그리드)
+    #makeSection(id, title, desc) {
+        const sec = document.createElement("div"); sec.className = "ltnc_stats_section"; sec.dataset.sec = id;
+        const head = document.createElement("div"); head.className = "ltnc_stats_sechead";
+        const h = document.createElement("h2"); h.textContent = title; head.appendChild(h);
+        const ctl = document.createElement("div"); ctl.className = "ltnc_stats_ctl"; head.appendChild(ctl);
+        sec.appendChild(head);
+        if (desc) { const dsc = document.createElement("div"); dsc.className = "desc"; dsc.textContent = desc; sec.appendChild(dsc); }
+        const g = document.createElement("div"); g.className = "ltnc_stats_grid"; sec.appendChild(g);
+        return { sec, ctl, grid: g, title };
+    }
+
+    // 상단 고정 섹션 이동 네비 + 현재 섹션 강조(IntersectionObserver)
+    #buildNav(sections) {
+        const nav = document.createElement("nav"); nav.className = "ltnc_stats_nav"; nav.id = "statsSectionNav";
+        const map = [];
+        for (const s of sections) {
+            const b = document.createElement("button"); b.type = "button"; b.textContent = s.title;
+            b.addEventListener("click", () => s.sec.scrollIntoView({ behavior: "smooth", block: "start" }));
+            nav.appendChild(b); map.push({ b, id: s.sec.dataset.sec });
+        }
+        if (this.#navObs) { try { this.#navObs.disconnect(); } catch (e) { /* 무시 */ } this.#navObs = null; }
+        if (typeof IntersectionObserver !== "undefined") {
+            this.#navObs = new IntersectionObserver((entries) => {
+                for (const en of entries) if (en.isIntersecting) {
+                    const id = en.target.dataset.sec;
+                    map.forEach(x => x.b.dataset.active = x.id === id ? "1" : "");
+                }
+            }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+            for (const s of sections) this.#navObs.observe(s.sec);
+        }
+        nav.appendChild(this.#buildSizeCtl());   // 네비 우측: 그래프 크기 선택
+        return nav;
+    }
+
+    // 추세 단위(일/주/월/분기/년) + 구간(일수) 셀렉터 — 추세 섹션 헤더. 단위 변경 시 구간=단위 기본값으로 리셋.
+    #buildTrendCtl(ctl, onChange) {
+        const uSeg = document.createElement("div"); uSeg.className = "ltnc_stats_seg";
+        const uLbl = document.createElement("span"); uLbl.className = "ltnc_ctl_label"; uLbl.textContent = "단위:"; uSeg.appendChild(uLbl);
+        const rSeg = document.createElement("div"); rSeg.className = "ltnc_stats_seg";
+        const rLbl = document.createElement("span"); rLbl.className = "ltnc_ctl_label"; rLbl.textContent = "구간:"; rSeg.appendChild(rLbl);
+        const syncRange = () => rSeg.querySelectorAll("button[data-r]").forEach(x => x.dataset.active = Number(x.dataset.r) === ltncStatsRange ? "1" : "");
+        for (const [t, b] of LTNC_STATS_BUCKETS) {
+            const btn = document.createElement("button"); btn.type = "button"; btn.dataset.b = b; btn.textContent = t;
+            if (b === ltncStatsBucket) btn.dataset.active = "1";
+            btn.addEventListener("click", () => {
+                if (ltncStatsBucket === b) return;
+                ltncStatsBucket = b;
+                ltncStatsRange = LTNC_STATS_RANGE_DEFAULT[b] || ltncStatsRange;   // 단위 기본 구간으로 리셋
+                uSeg.querySelectorAll("button[data-b]").forEach(x => x.dataset.active = x === btn ? "1" : "");
+                syncRange();
+                onChange();
+            });
+            uSeg.appendChild(btn);
+        }
+        for (const r of LTNC_STATS_RANGES) {
+            const btn = document.createElement("button"); btn.type = "button"; btn.dataset.r = r; btn.textContent = r + "일";
+            if (r === ltncStatsRange) btn.dataset.active = "1";
+            btn.addEventListener("click", () => {
+                if (ltncStatsRange === r) return;
+                ltncStatsRange = r; syncRange(); onChange();
+            });
+            rSeg.appendChild(btn);
+        }
+        ctl.append(uSeg, rSeg);
+    }
+
+    // 단위추세/누적평균 토글(요일·월중일자) — 단위추세 기본
+    #buildModeToggle(ctl, getMode, setMode, onChange) {
+        const seg = document.createElement("div"); seg.className = "ltnc_stats_seg";
+        const btns = [];
+        for (const [t, m] of [["단위추세", "trend"], ["누적평균", "avg"]]) {
+            const btn = document.createElement("button"); btn.type = "button"; btn.dataset.m = m; btn.textContent = t;
+            if (getMode() === m) btn.dataset.active = "1";
+            btn.addEventListener("click", () => {
+                if (getMode() === m) return;
+                setMode(m);
+                btns.forEach(x => x.dataset.active = x === btn ? "1" : "");
+                onChange();
+            });
+            seg.appendChild(btn); btns.push(btn);
+        }
+        ctl.appendChild(seg);
+    }
+
+    // 현재 크기 프리셋의 차트 높이(신규 카드 생성 시 사용)
+    #chartH() { return (LTNC_STATS_SIZES[ltncStatsSize] || LTNC_STATS_SIZES.s).h; }
+
+    // 크기 프리셋 적용 — 그리드 열폭/막대높이 = CSS 변수(#statsGrid 에 세팅, 하위 상속), 차트 = setSize.
+    #applySize() {
+        const p = LTNC_STATS_SIZES[ltncStatsSize] || LTNC_STATS_SIZES.s;
+        const grid = document.getElementById("statsGrid");
+        if (grid) { grid.style.setProperty("--ltnc-stats-col", p.col); grid.style.setProperty("--ltnc-cbars-h", p.cbars + "px"); }
+        for (const c of this.#charts) { c.h = p.h; try { c.u.setSize({ width: Math.max(c.mount.clientWidth || 0, 240), height: p.h }); } catch (e) { /* 무시 */ } }
+    }
+
+    // 그래프 크기 선택(네비 우측): 기본 소/중/대(그리드) · 전체 폭 소/중/대(1열, 높이만)
+    #buildSizeCtl() {
+        const wrap = document.createElement("div"); wrap.className = "ltnc_stats_sizectl";
+        const mkGroup = (labelText, keys) => {
+            const g = document.createElement("div"); g.className = "ltnc_stats_szgroup";
+            const l = document.createElement("span"); l.className = "ltnc_ctl_label"; l.textContent = labelText; g.appendChild(l);
+            for (const k of keys) {
+                const btn = document.createElement("button"); btn.type = "button"; btn.dataset.sz = k; btn.textContent = LTNC_STATS_SIZES[k].label;
+                if (k === ltncStatsSize) btn.dataset.active = "1";
+                btn.addEventListener("click", () => {
+                    if (ltncStatsSize === k) return;
+                    ltncStatsSize = k; try { localStorage.setItem("ltnc.statsSize", k); } catch (e) { /* 무시 */ }
+                    wrap.querySelectorAll("button[data-sz]").forEach(x => x.dataset.active = x === btn ? "1" : "");
+                    this.#applySize();
+                });
+                g.appendChild(btn);
+            }
+            return g;
+        };
+        wrap.append(mkGroup("기본", ["s", "m", "l"]), mkGroup("전체 폭", ["fs", "fm", "fl"]));
+        return wrap;
+    }
+
+    #loadAll() {
+        const grid = document.getElementById("statsGrid");
+        if (!grid) return;
+        this.#loaded = true; this.#lastLoad = Date.now();
+        this.#destroyCharts();
+        grid.innerHTML = "";
+
+        const latest = this.#makeSection("latest", "현황", "현재 상태 스냅샷");
+        const trend = this.#makeSection("trend", "추세", "기간 단위 변동 (우측 단위·구간 선택)");
+        const dist = this.#makeSection("dist", "분포", "최근 분포 (예시)");
+        const pattern = this.#makeSection("pattern", "패턴", "요일·시간대 활동 패턴");
+
+        const sections = [latest, trend, dist, pattern];
+        grid.appendChild(this.#buildNav(sections));
+        grid.append(...sections.map(s => s.sec));
+        this.#applySize();   // 저장된 크기 프리셋 → 그리드 열폭/막대높이 CSS 변수 세팅(차트 생성 전)
+        this.#syncNavHeight();   // 섹션 제목줄 sticky top 오프셋
+
+        // 추세 단위·구간 변경 → 추세 재렌더
+        this.#buildTrendCtl(trend.ctl, () => { this.#renderTrend(trend.grid); });
+
+        this.#renderLatest(latest.grid);
+        this.#renderTrend(trend.grid);
+        this.#renderDist(dist.grid);
+        this.#renderPattern(pattern.grid);
+    }
+
+    #runSection(grid, sec, cards) {
+        // 카드 슬롯을 정의 순서대로 먼저 배치(display:contents) → 비동기 완료 순서와 무관하게 표시 순서 고정.
+        const tasks = cards.map(c => {
+            const slot = document.createElement("div"); slot.style.display = "contents";
+            grid.appendChild(slot);
+            return () => this.#renderCard(slot, c, sec);
+        });
+        ltncStatsPool(tasks, 4).catch(e => console.error("[stats]", e));
+    }
+
+    #renderLatest(grid) {
+        this.#runSection(grid, "latest", [
+            { stat: "events_today" },
+        ]);
+    }
+    #renderTrend(grid) {
+        this.#destroySection("trend"); grid.innerHTML = "";
+        const b = ltncStatsBucket, days = ltncStatsRange;
+        this.#runSection(grid, "trend", [
+            { stat: "events_trend", params: { b, days } },
+            { stat: "active_users_trend", params: { b, days } },
+            { stat: "events_by_type_trend", params: { b, days } },
+        ]);
+    }
+    #renderDist(grid) {
+        this.#runSection(grid, "dist", [
+            { stat: "event_type_dist" }, { stat: "status_dist" }, { stat: "top_paths" },
+        ]);
+    }
+    #renderPattern(grid) {
+        this.#runSection(grid, "pattern", [
+            { stat: "dow_bars" }, { stat: "hourly_heatmap" },
+        ]);
+    }
+
+    async #renderCard(grid, c, sec) {
+        let d;
+        try { d = await ltncStatsFetch(c.stat, c.params); }
+        catch (e) {
+            const cell = ltncStatsCardEl(c.title || c.stat, null); grid.appendChild(cell.card);
+            const em = document.createElement("div"); em.className = "ltnc_stats_empty"; em.textContent = "불러오기 실패 (" + e.message + ")"; cell.body.appendChild(em);
+            return;
+        }
+        if (!grid.isConnected) return;
+        const push = (r) => { if (r) { r.sec = sec; this.#charts.push(r); } };
+        const mk = (title, redraw) => { const cell = ltncStatsCardEl(title, redraw); grid.appendChild(cell.card); return cell; };
+
+        if (d.kind === "table") {
+            const redraw = (cont) => { ltncStatsRenderTable(cont, d); return null; };   // 넓은 표 크게보기
+            redraw(mk(c.title || d.title, redraw).body);
+        }
+        else if (d.kind === "heat") {
+            const redraw = (cont, o) => { ltncStatsRenderHeat(cont, d, o); return null; };
+            redraw(mk(c.title || d.title, redraw).body, {});
+        }
+        else if (d.kind === "dist") {
+            // 인라인=상위 12개만, 상세(크게보기)=전체 재조회(limit 크게)해서 모든 항목 표시.
+            let full = null;
+            const redraw = async (cont, o) => {
+                if (o && o.detail) {
+                    if (!full) { try { full = await ltncStatsFetch(c.stat, Object.assign({}, c.params, { limit: 1000 })); } catch (e) { full = d; } }
+                    ltncStatsRenderDist(cont, full);
+                } else ltncStatsRenderDist(cont, d, { max: 12 });
+                return null;
+            };
+            redraw(mk(c.title || d.title, redraw).body, {});
+        }
+        else if (d.kind === "series") {
+            // split → 시리즈별 카드(묶음 prefix 생략, 시리즈명만). 단일 → 카드 제목 = c.title || d.title.
+            const list = (d.split && (d.series || []).length > 1)
+                ? d.series.map(s => ({ title: s.name, dd: { unit: d.unit, series: [s] } }))
+                : [{ title: c.title || d.title, dd: d }];
+            for (const it of list) {
+                const redraw = (cont, o) => ltncStatsRenderChart(cont, it.dd, o);
+                push(redraw(mk(it.title, redraw).body, { height: this.#chartH() }));
+            }
+        }
+        else if (d.kind === "bars") {
+            if (d.split) {
+                for (const s of d.series || []) {
+                    const redraw = (cont, o) => { ltncStatsRenderBars(cont, d.categories, s, o); return null; };
+                    redraw(mk(s.name, redraw).body, {});
+                }
+            } else {
+                const redraw = (cont, o) => { (d.series || []).forEach(s => ltncStatsRenderBars(cont, d.categories, s, o)); return null; };
+                redraw(mk(c.title || d.title, redraw).body, {});
+            }
+        }
+    }
+
+}
+
+
 // 4) 메인 메뉴 항목 동작 (컷오버 워룸 · 알림센터 · 업데이트 확인 · 로그아웃) — mainMenu.html 의 인라인 onclick 에서 호출.
 //   EstreUI 가 메뉴 섹션의 클릭 전파를 차단해 document 위임 바인딩이 안 먹힘(back_navigation 과 동일 패턴).
 //   인라인 onclick 은 타깃에서 직접 실행돼 확실히 동작 — window 노출로 인라인 스코프에서 접근.
@@ -1212,13 +1835,31 @@ if ("serviceWorker" in navigator) {
 }
 
 // 6) 새 창 진입 파라미터 라우팅 (?ltncOpen=alerts — 푸시 클릭으로 새 창이 열린 경우, main.js 가 림 준비 후 호출)
+//    + 계정별 홈탭: 세션 계정에 home(예 mpsol→stats)이 있으면 부팅 직후 해당 루트탭으로 전환.
 function ltncRouteFromParams() {
+    let routed = false;
     try {
         const params = new URLSearchParams(location.search);
         const open = params.get("ltncOpen");
-        if (open === "alerts") appPageManager.bringPage("alerts", { data: { alertId: params.get("ltncAlertId") } });
-        else if (open === "warroom") appPageManager.bringPage("warroom");
+        if (open === "alerts") { appPageManager.bringPage("alerts", { data: { alertId: params.get("ltncAlertId") } }); routed = true; }
+        else if (open === "warroom") { appPageManager.bringPage("warroom"); routed = true; }
     } catch (exc) { console.error("[LTNC] 진입 라우팅 실패:", exc); }
+    if (!routed) ltncApplyHomeTab();   // 명시 진입 라우팅(푸시 클릭)이 우선
+}
+
+// 계정 홈탭 조회·적용 — /api/me 의 home. 미로그인(401)·미설정이면 아무것도 안 함.
+async function ltncApplyHomeTab() {
+    try {
+        const r = await fetch("/api/me");
+        if (!r.ok) return;
+        const me = await r.json();
+        if (me?.home) ltncGoHomeTab(me.home);
+    } catch (exc) { /* 네트워크 실패 — 홈탭 이동 생략 */ }
+}
+
+function ltncGoHomeTab(tabId) {
+    try { estreUi.switchRootTab(String(tabId)); }
+    catch (exc) { console.error("[LTNC] 홈탭 전환 실패:", tabId, exc); }
 }
 
 // 7) 알림 초기 로드 (인증 만료 상태면 401 → 로그인 오버레이로 자연 전환)

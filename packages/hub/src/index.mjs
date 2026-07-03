@@ -6,6 +6,7 @@ import { createAuth } from './auth.mjs';
 import { createNotifier } from './notify.mjs';
 import { createAlertEngine } from './alerts.mjs';
 import { createCheckRunner } from './checks.mjs';
+import { createStatsModule } from './stats.mjs';
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 
 const cfg = loadConfig(process.argv[2]);
@@ -26,6 +27,9 @@ setInterval(() => { try { ext.alerts.sweep(); } catch (e) { console.error('[aler
 // 외부 HTTP 체크러너 — 결과를 가상 서버 '@checks' 메트릭으로 기존 ingest 파이프라인에 적재
 ext.checks = createCheckRunner({ cfg, ingest: (ts, metrics) => hub.ingestVirtual('@checks', ts, metrics, '외부 체크') });
 ext.checks.start();
+
+// 통계 탭 백엔드 — ClickHouse 조회(allowlist named 쿼리, read-only). config.stats 미설정 시 비활성.
+ext.stats = createStatsModule({ cfg, log: console });
 
 // 허브 이벤트루프 지연 자가감시 — 외부체크 ms 가 루프 블록(purge·rollup·GC·호스트 CPU 경합)에 부풀려지는 것을 분리·가시화.
 // 판별: 체크 스파이크 + loop.lag 스파이크 동시 = 측정 아티팩트(서버 정상) · loop.lag 평탄한데 한 체크만 튐 = 그 서버 실장애.
