@@ -167,9 +167,14 @@ class EstreHandle {
 
     /**
      * Creates and registers a handle instance on a single element.
+     *
+     * Extension point — the first time a specifier becomes active, the optional global
+     * `window.estreUILoadCSS(specifier)` is invoked when an adopter defines it, so that
+     * handle-scoped stylesheets can be injected on first use instead of up front. The
+     * adopter owns the specifier-to-asset mapping; absent a definition this is a no-op.
      * @param {Element} element - Target DOM element to bind.
      * @param {*} host - Host object.
-     * @param {string} specifier - Handle specifier.
+     * @param {string} specifier - Handle specifier (the handle's CSS selector).
      * @param {typeof EstreHandle} handleClass - Handle class.
      * @param {boolean} [replace=false] - If true, replaces existing handles.
      */
@@ -184,6 +189,8 @@ class EstreHandle {
         if (loaded == null) {
             loaded = new Set();
             this.#activeHandle[specifier] = loaded;
+            // RCSS css-asset: inject handle-specific CSS on first use of this specifier (on-handle-active).
+            if (typeof window !== "undefined" && window.estreUILoadCSS) window.estreUILoadCSS(specifier);
         }
         loaded.add(handle);
         handle.init();

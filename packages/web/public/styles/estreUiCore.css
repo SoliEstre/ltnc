@@ -216,7 +216,6 @@ nav#overwatchPanel #timeline .timeline_item.timeline_item_exit { animation: time
 /* root tabs (bottom) */
 footer#fixedBottom { position: fixed; display: flex; flex-direction: row; flex-wrap: nowrap; z-index: 110; bottom: 0; left: 0; right: 0; height: var(--rootbar-height); margin: 0; padding-bottom: var(--bottom-safe-pad); justify-content: center; background-color: var(--color-boundary-foggy-o66); backdrop-filter: var(--basic-backdrop-blur); -webkit-backdrop-filter: var(--basic-backdrop-blur); justify-content: center; user-select: none; }
 footer#fixedBottom nav { position: relative; display: flex; flex-direction: row; flex-wrap: nowrap; height: var(--rootbar-height); flex-grow: 1; flex-shrink: 1; user-select: none; }
-footer#fixedBottom nav:not(#rootbar) { max-width: 0; }
 footer#fixedBottom nav:first-child { justify-content: flex-end; }
 footer#fixedBottom nav:last-child { justify-content: flex-start; }
 footer#fixedBottom nav#rootbar { width: var(--available-max-width); min-width: var(--rootbar-min-width); max-width: var(--rootbar-max-width); padding-inline: var(--left-pad) var(--right-pad); }
@@ -243,6 +242,8 @@ footer#fixedBottom nav#rootbar { width: max-content; padding-inline: 0; flex-gro
 footer#fixedBottom nav:not(#rootbar) { width: -moz-available; width: -webkit-fill-available; width: stretch; flex-grow: 1; }
 footer#fixedBottom nav:not(#rootbar):first-child { padding-left: var(--left-pad); }
 footer#fixedBottom nav:not(#rootbar):last-child { padding-right: var(--right-pad); }
+} @media all and (not ((min-height: 700px) and (min-width: 740px))) {
+footer#fixedBottom nav:not(#rootbar) { max-width: 0; }
 }
 footer#fixedBottom nav#customFixedSections { position: relative; display: flex; flex-flow: row nowrap; align-items: stretch; gap: 4px; overflow: hidden; }
 footer#fixedBottom nav#instantSections { position: relative; display: flex; flex-flow: row nowrap; align-items: stretch; justify-content: flex-start; gap: 4px; overflow: hidden; }

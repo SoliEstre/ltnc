@@ -1,5 +1,9 @@
-const INSTALLATION_VERSION_NAME = "ltnc-0.1.0-r20260703";
+const INSTALLATION_VERSION_NAME = "ltnc-0.1.0-r20260715";
 // ^^ LTNC PWA 릴리스 버전 — 앱 파일 변경 시 이 값을 올려서 캐시 갱신
+//    r20260715: EstreUI v1.6.0 반영(^1.5.1→^1.6.0, COMMON 캐시 20260626→20260715) —
+//               estreU0EEOZ.js csc 버그수정(v.s→b.s) · estreUi-handles.js estreUILoadCSS 확장점 ·
+//               estreUi-main.js 주석 일반화 · estreUiCore.css footer side-nav max-width:0 을 폰 뷰포트로 스코프.
+//               boot.js·serviceLoader.html 은 채택자 고유값이라 미수령(업스트림은 자기 사본의 adopter 값을 제거한 것).
 //    r20260626: 라이트모드 컬러셋(main.css·ltnc-charts.js) — 기존 PWA 캐시 무효화
 //    r20260626b: 타일 라이트모드(게이지 트랙·카드/뱃지 보더 흰색-알파→토큰)
 //    r20260702: 메인메뉴 업데이트 확인 버튼(mainMenu.html·app.js — appActionManager.checkUpdate)
@@ -35,7 +39,7 @@ const INSTALLATION_FILE_LIST = [
 
 
 // Common files cache - Be changes some time but, well not changed very often
-const CACHE_NAME_COMMON_FILES = "ltnc-common-files-cache-v1-20260626";
+const CACHE_NAME_COMMON_FILES = "ltnc-common-files-cache-v1-20260715";  // EstreUI v1.6.0 (csc 버그수정·estreUILoadCSS 훅·footer nav 스코프)
 
 const COMMON_FILES_TO_CACHE = [
     "./",

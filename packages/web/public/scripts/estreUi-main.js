@@ -1897,7 +1897,7 @@ const estreUi = {
 
     // ─── instantSections — external embed hook (cover bar, Phase 3) ───
     //
-    // Light-DOM-mounted embeds (future docked tools…) can
+    // Light-DOM-mounted embeds (external talk widgets, future docked tools…) can
     // surface their own windows in the right-side cover bar (instantSections)
     // using these four wrappers. Internally they delegate to the singleton
     // EstreCoverBarHandle managed by initCoverBar(); each push returns a
@@ -2553,7 +2553,7 @@ class EstreCoverBarHandle {
     /**
      * Apply the project-wide [data-badge] attribute convention (see
      * estreUi.css `article [data-badge]::after`) to an element. Display
-     * rules — kept consistent with `setPushNotificationBadge`
+     * rules — kept consistent with host-side badge setters (e.g. `setPushNotificationBadge`)
      * elsewhere in the host so themes can override `--badge-color` once:
      *   - count null / 0 / negative → attribute removed
      *   - count === 1               → data-badge="" → dot (CSS :empty variant)

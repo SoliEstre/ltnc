@@ -575,7 +575,7 @@ const b = new Proxy({
 });
 
 /** CSS support check */ 
-const csc = method => doc.$b.css(v.s(method)) == t1;
+const csc = method => doc.$b.css(b.s(method)) == t1;
 
 /** CSS support methods */
 const csm = {
