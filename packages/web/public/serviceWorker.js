@@ -1,5 +1,7 @@
-const INSTALLATION_VERSION_NAME = "ltnc-0.1.0-r20260715";
+const INSTALLATION_VERSION_NAME = "ltnc-0.1.0-r20260721";
 // ^^ LTNC PWA 릴리스 버전 — 앱 파일 변경 시 이 값을 올려서 캐시 갱신
+//    r20260721: 대시보드 서버 카드 드래그 재배치(⠿ 그립·pointer 공통) + 순서 기기별 localStorage 유지(ltnc.cardOrder)
+//               + 펼침·내용맞춤 마소너리(CSS columns — 행 정렬 빈 공간 제거) (app.js·main.css, COMMON 캐시 20260715→20260721)
 //    r20260715: EstreUI v1.6.0 반영(^1.5.1→^1.6.0, COMMON 캐시 20260626→20260715) —
 //               estreU0EEOZ.js csc 버그수정(v.s→b.s) · estreUi-handles.js estreUILoadCSS 확장점 ·
 //               estreUi-main.js 주석 일반화 · estreUiCore.css footer side-nav max-width:0 을 폰 뷰포트로 스코프.
@@ -39,7 +41,7 @@ const INSTALLATION_FILE_LIST = [
 
 
 // Common files cache - Be changes some time but, well not changed very often
-const CACHE_NAME_COMMON_FILES = "ltnc-common-files-cache-v1-20260715";  // EstreUI v1.6.0 (csc 버그수정·estreUILoadCSS 훅·footer nav 스코프)
+const CACHE_NAME_COMMON_FILES = "ltnc-common-files-cache-v1-20260721";  // 카드 드래그 재배치+순서 저장+마소너리 (app.js·main.css)
 
 const COMMON_FILES_TO_CACHE = [
     "./",

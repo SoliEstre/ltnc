@@ -181,6 +181,70 @@ let ltncDashView = (localStorage.getItem("ltnc.dashView") === "expanded") ? "exp
 let ltncCardWidth = (localStorage.getItem("ltnc.cardWidth") === "full") ? "full" : "fit";   // 카드 폭: fit(내용맞춤 wrap, 기본) | full(전체폭 1열)
 const ltncInlineCharts = new Map();   // serverId -> [LTNCCharts 핸들]
 
+// ── 서버 카드 사용자 정렬 (드래그 재배치 — 기기별 localStorage 유지) ──
+let ltncCardOrder = [];
+try { ltncCardOrder = JSON.parse(localStorage.getItem("ltnc.cardOrder") || "[]"); } catch (e) { ltncCardOrder = []; }
+if (!Array.isArray(ltncCardOrder)) ltncCardOrder = [];
+
+// 저장된 순서대로 섹션 DOM 재배열 — 미등재(신규) 서버는 기존 상대 순서 유지한 채 뒤에 붙는다
+function ltncApplyCardOrder(grid) {
+    if (ltncCardOrder.length < 1) return;
+    const rank = new Map(ltncCardOrder.map((id, i) => [id, i]));
+    const sections = [...grid.querySelectorAll(".ltnc_server_section")];
+    const sorted = sections.slice().sort((a, b) =>
+        (rank.has(a.dataset.server) ? rank.get(a.dataset.server) : 1e9 + sections.indexOf(a))
+        - (rank.has(b.dataset.server) ? rank.get(b.dataset.server) : 1e9 + sections.indexOf(b)));
+    // 이미 정렬 상태면 no-op (metrics 재수신 렌더마다 DOM 재배치·차트 재마운트 방지)
+    if (sorted.every((el, i) => el === sections[i])) return;
+    for (const el of sorted) grid.appendChild(el);
+}
+
+function ltncSaveCardOrder(grid) {
+    ltncCardOrder = [...grid.querySelectorAll(".ltnc_server_section")].map(el => el.dataset.server);
+    localStorage.setItem("ltnc.cardOrder", JSON.stringify(ltncCardOrder));
+}
+
+// 드래그 재배치 — 그립(⠿) pointer 드래그로 섹션을 실시간 이동, 놓으면 순서 저장.
+// pointer 이벤트라 마우스·터치 공통(그립에 touch-action:none). 카드 클릭(상세 이동)과 충돌 없음(그립에서만 시작).
+function ltncBindCardDrag(grid) {
+    if (grid.dataset.dragBound === "1") return;
+    grid.dataset.dragBound = "1";
+    let dragging = null, active = false, startX = 0, startY = 0;
+
+    const finish = (save) => {
+        if (dragging == null) return;
+        dragging.classList.remove("ltnc_dragging");
+        if (save && active) ltncSaveCardOrder(grid);
+        dragging = null; active = false;
+    };
+
+    grid.addEventListener("pointerdown", e => {
+        const grip = e.target.closest(".ltnc_drag_grip");
+        if (grip == null) return;
+        dragging = grip.closest(".ltnc_server_section");
+        startX = e.clientX; startY = e.clientY; active = false;
+        try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+        e.preventDefault();
+    });
+    grid.addEventListener("pointermove", e => {
+        if (dragging == null) return;
+        if (!active) {
+            if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) < 6) return;  // 오터치 가드
+            active = true;
+            dragging.classList.add("ltnc_dragging");
+        }
+        const over = document.elementsFromPoint(e.clientX, e.clientY)
+            .map(el => el.closest?.(".ltnc_server_section"))
+            .find(s => s != null && s !== dragging);
+        if (over == null || over.parentNode !== dragging.parentNode) return;
+        const r = over.getBoundingClientRect();
+        const before = e.clientY < r.top + r.height / 2;
+        over.parentNode.insertBefore(dragging, before ? over : over.nextSibling);
+    });
+    grid.addEventListener("pointerup", () => finish(true));
+    grid.addEventListener("pointercancel", () => finish(false));
+}
+
 // ── 차트 표시 설정 (구간/세로축 범위/높이 — 전부 localStorage 유지) ──
 const ltncChartPrefs = {
     rangeSec: parseInt(localStorage.getItem("ltnc.rangeSec"), 10) || 3600,                          // 구간(초)
@@ -260,6 +324,12 @@ function ltncRenderServerGrid() {
             const card = document.createElement(s.id === "@checks" ? "ltnc-checks-card" : "ltnc-server-card");
             card.setAttribute("server", s.id);
             section.appendChild(card);
+            // 드래그 그립 (⠿) — 카드 클릭과 분리된 재배치 시작점
+            const grip = document.createElement("div");
+            grip.className = "ltnc_drag_grip";
+            grip.title = "드래그로 카드 위치 이동";
+            grip.textContent = "⠿";
+            section.appendChild(grip);
             grid.appendChild(section);
         }
         if (ltncDashView === "expanded") {
@@ -274,6 +344,10 @@ function ltncRenderServerGrid() {
         const id = section.dataset.server;
         if (!seen.has(id)) { ltncDestroyInlineCharts(id); section.remove(); }
     });
+
+    // 기기별 저장 순서 적용 + 드래그 재배치 바인딩(1회)
+    ltncApplyCardOrder(grid);
+    ltncBindCardDrag(grid);
 
     // 토글 버튼 라벨 + 컨트롤 바 동기화
     const toggle = document.getElementById("dashViewToggle");

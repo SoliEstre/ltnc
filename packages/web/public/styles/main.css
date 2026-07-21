@@ -151,17 +151,42 @@ main button, main input, main textarea { font-family: 'Noto Sans KR', sans-serif
     gap: 14px;
     padding: 14px 18px 28px;
 }
-/* cards 모드: 서버 섹션 래퍼를 그리드에 투명화 — 카드가 그리드 셀 그대로 */
-.ltnc_server_grid[data-view="cards"] .ltnc_server_section { display: contents; }
+/* cards 모드: 섹션이 그리드 셀(카드 host 가 display:block 이라 시각 동일) — 드래그 그립 위치 기준(relative) */
 .ltnc_server_grid[data-view="cards"] .ltnc_inline_charts { display: none; }
+.ltnc_server_section { position: relative; }
 
 /* 카드 폭 토글: fit(내용맞춤·wrap, 기본) ↔ full(전체폭·1열). data-width 로 제어 */
 .ltnc_server_grid[data-view="cards"][data-width="full"] { grid-template-columns: 1fr; }
-.ltnc_server_grid[data-view="expanded"][data-width="fit"] {   /* 펼침도 풀폭 세로나열 대신 wrap 그리드로 촘촘하게 */
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-    align-items: start;
+.ltnc_server_grid[data-view="expanded"][data-width="fit"] {   /* 펼침+내용맞춤 = 마소너리(CSS columns) — 행 높이 정렬로 생기던 카드 아래 빈 공간 제거, 바로 아래 붙여 쌓기 */
+    display: block;
+    columns: 380px;
+    column-gap: 14px;
 }
+.ltnc_server_grid[data-view="expanded"][data-width="fit"] .ltnc_server_section {
+    break-inside: avoid;
+    margin-bottom: 18px;
+}
+
+/* 드래그 그립 (⠿) — 섹션 우상단, 터치 대응(touch-action:none) */
+.ltnc_drag_grip {
+    position: absolute; top: 6px; right: 8px; z-index: 5;
+    padding: 2px 7px; border-radius: 8px;
+    color: var(--ltnc-text);
+    opacity: .3;
+    font-size: 14px; line-height: 1.3;
+    cursor: grab;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    transition: opacity .15s, color .15s, background .15s;
+}
+.ltnc_server_section:hover .ltnc_drag_grip, .ltnc_drag_grip:active { opacity: 1; }
+.ltnc_drag_grip:hover { color: var(--ltnc-accent); background: color-mix(in srgb, var(--ltnc-accent) 14%, transparent); }
+.ltnc_server_section.ltnc_dragging {
+    opacity: .65;
+    outline: 2px dashed var(--ltnc-accent);
+    outline-offset: 2px;
+}
+.ltnc_server_section.ltnc_dragging .ltnc_drag_grip { cursor: grabbing; }
 
 /* expanded 모드: 서버별 섹션(카드 + 미니 차트 스트립) 세로 나열 */
 .ltnc_server_grid[data-view="expanded"] {
